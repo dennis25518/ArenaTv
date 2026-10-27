@@ -1,142 +1,64 @@
 'use client';
 
-import React, {
-  useState,
-  useEffect,
-} from 'react';
-
-import {
-  motion,
-  AnimatePresence,
-} from 'framer-motion';
-
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '@/components/layout/Sidebar';
-
 import { Header } from '@/components/layout/Header';
-
 import { MobileNav } from '@/components/layout/MobileNav';
-
-import { VideoPlayer } from '@/components/player/VideoPlayer';
-
-import { ChatPanel } from '@/components/chat/ChatPanel';
-
-import { LiveMatchesView } from '@/components/matches/LiveMatchesView';
-
+import { LiveChannelsView } from '@/components/channels/LiveChannelsView';
 import { MyListView } from '@/components/matches/MyListView';
-
 import { ProfileView } from '@/components/profile/ProfileView';
-
-import { SubscriptionPromo } from '@/components/subscription/SubscriptionPromo';
-
 import { LogoutDialog } from '@/components/modals/LogoutDialog';
-
 import { SubscriptionModal } from '@/components/modals/SubscriptionModal';
-
-import {
-  User,
-  PaymentMethod,
-  Plan,
-} from '@/types';
+import { User, PaymentMethod, Plan } from '@/types';
 
 export default function Home() {
-  const [activeTab, setActiveTab] =
-  useState('Live');
-
-  const [mounted, setMounted] =
-    useState(false);
+  const [activeTab, setActiveTab] = useState('Channels');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    const savedTab = localStorage.getItem('activeTab');
+    const allowedTabs = ['Channels', 'My List', 'Profile'];
 
-    const savedTab =
-      localStorage.getItem(
-        'activeTab'
-      );
-
-      const allowedTabs = [
-        'Live',
-        'All Matches',
-        'My List',
-        'Chat',
-        'Profile',
-      ];
-      
-      if (
-        savedTab &&
-        allowedTabs.includes(savedTab)
-      ) {
-        setActiveTab(savedTab);
-      }
+    if (savedTab && allowedTabs.includes(savedTab)) {
+      setActiveTab(savedTab);
+    } else {
+      setActiveTab('Channels');
+    }
   }, []);
 
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem(
-        'activeTab',
-        activeTab
-      );
+      localStorage.setItem('activeTab', activeTab);
     }
   }, [activeTab, mounted]);
 
-  const [user, setUser] =
-    useState<User | null>({
-      name: 'tech tech',
+  const [user, setUser] = useState<User | null>({
+    name: 'tech tech',
+    email: 'techtech@gmail.com',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+    isPremium: false,
+  });
 
-      email:
-        'techtech@gmail.com',
-
-      avatar:
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-
-      isPremium: false,
-    });
-
-  const [
-    showLogoutDialog,
-    setShowLogoutDialog,
-  ] = useState(false);
-
-  const [
-    showSubModal,
-    setShowSubModal,
-  ] = useState(false);
-
-  const [subStep, setSubStep] =
-    useState<
-      'plans' | 'payment'
-    >('plans');
-
-  const [
-    paymentMethods,
-    setPaymentMethods,
-  ] = useState<
-    PaymentMethod[]
-  >([
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [subStep, setSubStep] = useState<'plans' | 'payment'>('plans');
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([
     {
       id: '1',
-
       type: 'Card',
-
       provider: 'Visa',
-
       last4: '4242',
-
       expiry: '12/26',
-
       isPrimary: true,
     },
-
     {
       id: '2',
-
       type: 'Mobile Money',
-
       provider: 'M-Pesa',
-
       last4: '8812',
-
       expiry: 'N/A',
-
       isPrimary: false,
     },
   ]);
@@ -144,359 +66,129 @@ export default function Home() {
   const handleLogin = () => {
     setUser({
       name: 'tech tech',
-
-      email:
-        'techtech@gmail.com',
-
-      avatar:
-        'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-
+      email: 'techtech@gmail.com',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
       isPremium: false,
     });
   };
 
   const handleLogout = () => {
     setUser(null);
-
-    setShowLogoutDialog(
-      false
-    );
+    setShowLogoutDialog(false);
   };
 
-  const handleSubscribe =
-    () => {
-      setSubStep('plans');
+  const handleSubscribe = () => {
+    setSubStep('plans');
+    setShowSubModal(true);
+  };
 
-      setShowSubModal(true);
-    };
-
-  const handlePlanSelect = (
-    plan: Plan
-  ) => {
+  const handlePlanSelect = (plan: Plan) => {
     setSubStep('payment');
   };
 
-  const handlePaymentConfirm =
-    (
-      method: PaymentMethod
-    ) => {
-      if (user) {
-        setUser({
-          ...user,
+  const handlePaymentConfirm = (method: PaymentMethod) => {
+    if (user) {
+      setUser({
+        ...user,
+        isPremium: true,
+      });
+    }
+    setShowSubModal(false);
+  };
 
-          isPremium: true,
-        });
-      }
-
-      setShowSubModal(false);
-    };
-
-  const handleAddPayment = (
-    method: any
-  ) => {
+  const handleAddPayment = (method: any) => {
     if (method) {
-      setPaymentMethods([
-        ...paymentMethods,
-
-        method,
-      ]);
+      setPaymentMethods([...paymentMethods, method]);
     } else {
-      setActiveTab(
-        'Profile'
-      );
+      setActiveTab('Profile');
     }
   };
 
-  const handleDeletePayment = (
-    id: string
-  ) => {
-    setPaymentMethods(
-      paymentMethods.filter(
-        (p) => p.id !== id
-      )
-    );
+  const handleDeletePayment = (id: string) => {
+    setPaymentMethods(paymentMethods.filter((p) => p.id !== id));
   };
 
-  const handleEditPayment = (
-    updated: PaymentMethod
-  ) => {
-    setPaymentMethods(
-      paymentMethods.map((p) =>
-        p.id === updated.id
-          ? updated
-          : p
-      )
-    );
+  const handleEditPayment = (updated: PaymentMethod) => {
+    setPaymentMethods(paymentMethods.map((p) => (p.id === updated.id ? updated : p)));
   };
 
-  if (!mounted) {
-    return null;
-  }
-  
   return (
-    <div className="flex min-h-screen bg-[var(--color-bg-main)]">
-      <Sidebar
+    <div className="flex flex-col min-h-screen bg-[var(--color-bg-main)]">
+      <Header
         active={activeTab}
-        setActive={
-          setActiveTab
-        }
+        setActive={setActiveTab}
+        user={user}
+        onLogin={handleLogin}
+        onSubscribe={handleSubscribe}
+        onLogoutClick={() => setShowLogoutDialog(true)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
-          active={activeTab}
-          setActive={
-            setActiveTab
-          }
-          user={user}
-          onLogin={
-            handleLogin
-          }
-          onSubscribe={
-            handleSubscribe
-          }
-          onLogoutClick={() =>
-            setShowLogoutDialog(
-              true
-            )
-          }
-        />
+      <div className="flex flex-1 min-w-0">
+        <Sidebar active={activeTab} setActive={setActiveTab} />
 
-        <main className="flex-1 p-4 lg:p-8 pb-24 lg:pb-8 flex flex-col xl:flex-row gap-8 max-w-[1600px] mx-auto w-full">
-          <div className="flex-1 flex flex-col gap-8 min-w-0 order-2 xl:order-1">
+        <main className="flex-1 p-4 lg:p-6 pb-24 lg:pb-8 flex flex-col gap-6 max-w-[1400px] mx-auto w-full min-w-0">
+          <div className="flex-1 flex flex-col gap-6 min-w-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
-                initial={{
-                  opacity: 0,
-                  y: 10,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                exit={{
-                  opacity: 0,
-                  y: -10,
-                }}
-                transition={{
-                  duration: 0.3,
-                }}
-                className="flex flex-col gap-8"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col gap-6"
               >
-                {activeTab ===
-                'Live' ? (
-                  <>
-                    <VideoPlayer />
-
-                    <div className="flex flex-col gap-10">
-                      {/* LIVE MATCHES */}
-                      <div className="flex flex-col gap-6">
-                        <div className="flex items-center justify-between px-1">
-                          <h2 className="text-lg lg:text-xl font-bold">
-                            Trending
-                            Live
-                          </h2>
-
-                          <button
-                            onClick={() =>
-                              setActiveTab(
-                                'All Matches'
-                              )
-                            }
-                            className="text-[var(--color-brand)] text-xs lg:text-sm font-bold hover:underline"
-                          >
-                            View
-                            All
-                          </button>
-                        </div>
-
-                        <LiveMatchesView />
-                      </div>
-                    </div>
-
-                    <SubscriptionPromo
-                      onSubscribe={
-                        handleSubscribe
-                      }
-                      isPremium={
-                        user?.isPremium ||
-                        false
-                      }
-                    />
-                  </>
-                ) : activeTab ===
-                  'All Matches' ? (
-                  <div className="flex flex-col gap-10">
-                    {/* LIVE MATCHES */}
-                    <div className="flex flex-col gap-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h2 className="text-2xl font-bold">
-                            Live
-                            Matches
-                          </h2>
-
-                          <p className="text-sm text-[var(--color-text-secondary)]">
-                            Currently
-                            streaming
-                            football
-                            matches
-                          </p>
-                        </div>
-
-                        <button
-                          onClick={() =>
-                            setActiveTab(
-                              'Live'
-                            )
-                          }
-                          className="px-4 py-2 rounded-full border border-[var(--color-border-main)] text-sm font-bold hover:bg-[var(--color-brand)] hover:text-white transition-all"
-                        >
-                          Back
-                        </button>
-                      </div>
-
-                      <LiveMatchesView />
-                    </div>
-                  </div>
-                ) : activeTab ===
-                  'My List' ? (
-                  <MyListView
-                    matches={[]}
-                  />
-                ) : activeTab ===
-                  'Chat' ? (
-                  <div className="flex flex-col lg:flex-row gap-8">
-                    <div className="flex-1">
-                      <VideoPlayer />
-                    </div>
-
-                    <div className="flex-1 min-h-[600px]">
-                      <ChatPanel />
-                    </div>
-                  </div>
-                ) : activeTab ===
-                  'Profile' ? (
+                {activeTab === 'Channels' ? (
+                  <LiveChannelsView />
+                ) : activeTab === 'My List' ? (
+                  <MyListView onExploreChannels={() => setActiveTab('Channels')} />
+                ) : activeTab === 'Profile' ? (
                   <ProfileView
-                    paymentMethods={
-                      paymentMethods
-                    }
-                    onAddPayment={
-                      handleAddPayment
-                    }
-                    onDeletePayment={
-                      handleDeletePayment
-                    }
-                    onEditPayment={
-                      handleEditPayment
-                    }
                     user={user}
-                    onLogin={
-                      handleLogin
-                    }
+                    onLogin={handleLogin}
+                    onLogout={() => setShowLogoutDialog(true)}
+                    onSubscribe={handleSubscribe}
                   />
                 ) : (
                   <div className="premium-card p-20 flex flex-col items-center justify-center text-center gap-4 bg-white/50 backdrop-blur-sm">
                     <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-sm">
-                      <p className="text-4xl">
-                        ⚙️
-                      </p>
+                      <p className="text-4xl">⚙️</p>
                     </div>
-
                     <div>
-                      <h3 className="text-2xl font-bold">
-                        {
-                          activeTab
-                        }{' '}
-                        section is
-                        coming
-                        soon
-                      </h3>
-
+                      <h3 className="text-2xl font-bold">{activeTab} section is coming soon</h3>
                       <p className="text-[var(--color-text-secondary)]">
-                        We are
-                        working on
-                        bringing
-                        premium
-                        football
-                        content to
-                        your
-                        screen.
+                        We are bringing premium sports content to your screen.
                       </p>
                     </div>
-
                     <button
-                      onClick={() =>
-                        setActiveTab(
-                          'Live'
-                        )
-                      }
+                      onClick={() => setActiveTab('Channels')}
                       className="mt-4 px-6 py-2 bg-[var(--color-brand)] text-white rounded-full font-bold shadow-md hover:shadow-lg transition-all"
                     >
-                      Return to
-                      Live
-                      Matches
+                      Return to Channels
                     </button>
                   </div>
                 )}
               </motion.div>
             </AnimatePresence>
           </div>
-
-          {/* RIGHT CHAT */}
-          {activeTab !==
-            'Chat' &&
-            activeTab !==
-              'Profile' && (
-              <div className="hidden lg:block lg:w-full lg:max-w-none xl:w-[350px] shrink-0 h-auto xl:h-[calc(100vh-144px)] xl:sticky xl:top-[104px] order-3">
-                <ChatPanel />
-              </div>
-            )}
         </main>
       </div>
 
-      <MobileNav
-        active={activeTab}
-        setActive={
-          setActiveTab
-        }
-      />
+      <MobileNav active={activeTab} setActive={setActiveTab} />
 
       <LogoutDialog
-        isOpen={
-          showLogoutDialog
-        }
-        onClose={() =>
-          setShowLogoutDialog(
-            false
-          )
-        }
-        onConfirm={
-          handleLogout
-        }
+        isOpen={showLogoutDialog}
+        onClose={() => setShowLogoutDialog(false)}
+        onConfirm={handleLogout}
       />
 
       <SubscriptionModal
         isOpen={showSubModal}
-        onClose={() =>
-          setShowSubModal(
-            false
-          )
-        }
+        onClose={() => setShowSubModal(false)}
         step={subStep}
-        onSelectPlan={
-          handlePlanSelect
-        }
-        onConfirmPayment={
-          handlePaymentConfirm
-        }
-        paymentMethods={
-          paymentMethods
-        }
-        onAddPayment={
-          handleAddPayment
-        }
+        onSelectPlan={handlePlanSelect}
+        onConfirmPayment={handlePaymentConfirm}
+        paymentMethods={paymentMethods}
+        onAddPayment={handleAddPayment}
       />
     </div>
   );
