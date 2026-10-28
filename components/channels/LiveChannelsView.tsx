@@ -14,30 +14,37 @@ export const LiveChannelsView: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 1. First top flow: Local Channels (Tanzanian channels only)
+  // 1. Local Channels (Tanzanian channels only)
   const localChannels = channels.filter(
     (ch) => ch.country === 'TZ' || ch.category === 'Tanzania'
   );
 
-  // 2. Second flow: Major 24/7 World News Channels
+  // 2. Movies & Cinema Channels
+  const movieChannels = channels.filter((ch) => ch.category === 'Movies');
+
+  // 3. Cartoons & Kids Animation Channels
+  const cartoonChannels = channels.filter((ch) => ch.category === 'Cartoons');
+
+  // 4. Animals, Wildlife & Nature Channels
+  const animalChannels = channels.filter((ch) => ch.category === 'Animals');
+
+  // 5. Sports Channels
+  const sportsChannels = channels.filter((ch) => ch.category === 'Sports' || ch.category === 'Football');
+
+  // 6. Major 24/7 World News Channels
   const newsChannels = channels.filter((ch) => ch.category === 'News');
 
-  // 3. Third flow: Music & Youth Entertainment Channels
+  // 7. Music & Youth Entertainment Channels
   const musicChannels = channels.filter((ch) => ch.category === 'Music');
-
-  // 4. Fourth flow: International Sports Channels
-  const sportsChannels = channels.filter(
-    (ch) => ch.category === 'Sports' || (ch.category !== 'News' && ch.category !== 'Music' && ch.country !== 'TZ' && ch.category !== 'Tanzania')
-  );
 
   return (
     <div className="w-full flex flex-col gap-8">
-      {/* 1. TOP LIVE PLAYER (70 / 30 SPLIT) */}
+      {/* 1. TOP LIVE PLAYER */}
       <section className="w-full">
         <VideoPlayer />
       </section>
 
-      {/* 2. FIRST TOP FLOW: LOCAL CHANNELS ONLY */}
+      {/* 2. LOCAL CHANNELS */}
       <section className="w-full">
         <ChannelSectionRow
           title="Local"
@@ -47,7 +54,47 @@ export const LiveChannelsView: React.FC = () => {
         />
       </section>
 
-      {/* 3. SECOND FLOW: WORLD NEWS CHANNELS */}
+      {/* 3. MOVIES & CINEMA */}
+      <section className="w-full">
+        <ChannelSectionRow
+          title="Movies"
+          channels={movieChannels}
+          currentStreamId={currentStream.id}
+          onSelectChannel={handleSelectChannel}
+        />
+      </section>
+
+      {/* 4. CARTOONS & KIDS */}
+      <section className="w-full">
+        <ChannelSectionRow
+          title="Cartoons"
+          channels={cartoonChannels}
+          currentStreamId={currentStream.id}
+          onSelectChannel={handleSelectChannel}
+        />
+      </section>
+
+      {/* 5. ANIMALS & NATURE */}
+      <section className="w-full">
+        <ChannelSectionRow
+          title="Animals & Nature"
+          channels={animalChannels}
+          currentStreamId={currentStream.id}
+          onSelectChannel={handleSelectChannel}
+        />
+      </section>
+
+      {/* 6. SPORTS CHANNELS */}
+      <section className="w-full">
+        <ChannelSectionRow
+          title="Sports"
+          channels={sportsChannels}
+          currentStreamId={currentStream.id}
+          onSelectChannel={handleSelectChannel}
+        />
+      </section>
+
+      {/* 7. WORLD NEWS CHANNELS */}
       <section className="w-full">
         <ChannelSectionRow
           title="News"
@@ -57,7 +104,7 @@ export const LiveChannelsView: React.FC = () => {
         />
       </section>
 
-      {/* 4. THIRD FLOW: MUSIC CHANNELS */}
+      {/* 8. MUSIC CHANNELS */}
       <section className="w-full">
         <ChannelSectionRow
           title="Music"
@@ -66,16 +113,7 @@ export const LiveChannelsView: React.FC = () => {
           onSelectChannel={handleSelectChannel}
         />
       </section>
-
-      {/* 5. FOURTH FLOW: SPORTS CHANNELS */}
-      <section className="w-full">
-        <ChannelSectionRow
-          title="Sports"
-          channels={sportsChannels}
-          currentStreamId={currentStream.id}
-          onSelectChannel={handleSelectChannel}
-        />
-      </section>
     </div>
   );
 };
+
