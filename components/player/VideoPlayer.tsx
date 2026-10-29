@@ -815,7 +815,7 @@ export const VideoPlayer = () => {
         {/* ======================================================== */}
         {/* RIGHT PART: 30% CHANNEL DETAILS & OPTIONS                */}
         {/* ======================================================== */}
-        {!isFullScreen && (
+        {!isFullScreen && !isFloating && (
           <div className="w-full lg:w-[30%] flex flex-col justify-between p-5 rounded-2xl bg-white border border-[var(--color-border-main)] shadow-sm gap-4">
             {/* Top Area: Logo, On Air badge, Channel Name & About Section */}
             <div className="flex flex-col gap-3">

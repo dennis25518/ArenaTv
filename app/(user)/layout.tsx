@@ -3,6 +3,7 @@
 import React from 'react';
 import { AuthProvider } from '@/context/AuthContext';
 import { StreamProvider } from '@/context/StreamContext';
+import { FloatingMiniPlayer } from '@/components/player/FloatingMiniPlayer';
 
 export default function UserLayout({
   children,
@@ -11,7 +12,10 @@ export default function UserLayout({
 }) {
   return (
     <AuthProvider>
-      <StreamProvider>{children}</StreamProvider>
+      <StreamProvider>
+        {children}
+        <FloatingMiniPlayer />
+      </StreamProvider>
     </AuthProvider>
   );
 }
