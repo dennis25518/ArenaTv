@@ -11,5 +11,9 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     DEFAULT_SUPABASE_KEY;
 
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: {
+      name: 'arenax_admin_session',
+    },
+  });
 }

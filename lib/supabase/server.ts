@@ -14,6 +14,9 @@ export async function createClient() {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
       DEFAULT_SUPABASE_KEY,
     {
+      cookieOptions: {
+        name: 'arenax_user_session',
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -25,7 +28,6 @@ export async function createClient() {
             );
           } catch {
             // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing user sessions.
           }
         },
       },

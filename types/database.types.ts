@@ -192,6 +192,7 @@ export type Database = {
           code: string;
           discount_percent: number;
           applicable_plan: string;
+          duration_minutes: number;
           max_uses: number;
           used_count: number;
           expires_at: string;
@@ -203,6 +204,7 @@ export type Database = {
           code: string;
           discount_percent: number;
           applicable_plan?: string;
+          duration_minutes?: number;
           max_uses?: number;
           used_count?: number;
           expires_at: string;
@@ -214,11 +216,102 @@ export type Database = {
           code?: string;
           discount_percent?: number;
           applicable_plan?: string;
+          duration_minutes?: number;
           max_uses?: number;
           used_count?: number;
           expires_at?: string;
           is_active?: boolean;
           created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      promo_redemptions: {
+        Row: {
+          id: string;
+          promo_code_id: string;
+          code: string;
+          user_id: string | null;
+          user_email: string | null;
+          redeemed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          promo_code_id: string;
+          code: string;
+          user_id?: string | null;
+          user_email?: string | null;
+          redeemed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          promo_code_id?: string;
+          code?: string;
+          user_id?: string | null;
+          user_email?: string | null;
+          redeemed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      chat_messages: {
+        Row: {
+          id: string;
+          user_id: string;
+          user_name: string;
+          user_email: string | null;
+          avatar_url: string | null;
+          channel_room: 'general' | 'channel_requests' | 'feedback' | 'announcements';
+          message: string;
+          upvotes: number;
+          status: 'pending' | 'under_review' | 'completed';
+          is_admin: boolean;
+          is_pinned: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          user_name: string;
+          user_email?: string | null;
+          avatar_url?: string | null;
+          channel_room?: 'general' | 'channel_requests' | 'feedback' | 'announcements';
+          message: string;
+          upvotes?: number;
+          status?: 'pending' | 'under_review' | 'completed';
+          is_admin?: boolean;
+          is_pinned?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          user_name?: string;
+          user_email?: string | null;
+          avatar_url?: string | null;
+          channel_room?: 'general' | 'channel_requests' | 'feedback' | 'announcements';
+          message?: string;
+          upvotes?: number;
+          status?: 'pending' | 'under_review' | 'completed';
+          is_admin?: boolean;
+          is_pinned?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      chat_upvotes: {
+        Row: {
+          message_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          message_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          message_id?: string;
+          user_id?: string;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -228,6 +321,24 @@ export type Database = {
       is_admin: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
+      };
+      generate_promo_code: {
+        Args: {
+          p_code?: string | null;
+          p_discount_percent?: number;
+          p_applicable_plan?: string;
+          p_max_uses?: number;
+          p_duration_minutes?: number;
+        };
+        Returns: Json;
+      };
+      redeem_promo_code: {
+        Args: {
+          p_code: string;
+          p_user_id?: string | null;
+          p_user_email?: string | null;
+        };
+        Returns: Json;
       };
     };
     Enums: {};

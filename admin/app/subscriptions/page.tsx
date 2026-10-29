@@ -22,6 +22,7 @@ interface PromoCode {
   code: string;
   discount_percent: number;
   applicable_plan: string;
+  duration_minutes?: number;
   max_uses: number;
   used_count: number;
   expires_at: string;
@@ -30,6 +31,17 @@ interface PromoCode {
 }
 
 const STORAGE_KEY = 'arenax_admin_promo_codes';
+
+const formatDurationBadge = (minutes?: number) => {
+  if (!minutes) return '30m';
+  if (minutes === 5) return '5 Min';
+  if (minutes === 30) return '30 Min';
+  if (minutes === 60) return '1 Hour';
+  if (minutes === 360) return '6 Hours';
+  if (minutes === 1440) return '24 Hours';
+  if (minutes < 60) return `${minutes} Min`;
+  return `${Math.round(minutes / 60)} Hours`;
+};
 
 export default function AdminSubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -47,10 +59,10 @@ export default function AdminSubscriptionsPage() {
 
   const [promoForm, setPromoForm] = useState({
     code: '',
-    discount_percent: 50,
+    discount_percent: 100,
     applicable_plan: 'All Plans',
     max_uses: 100,
-    validDays: 30,
+    durationMinutes: 30,
   });
 
   const supabase = createClient();
@@ -99,7 +111,17 @@ export default function AdminSubscriptionsPage() {
     }
   };
 
-  const generateRandomCode = (discount: number) => {
+  const generateRandomCode = async (discount: number) => {
+    try {
+      const res = await fetch(`/api/promo/generate?discount=${discount}`);
+      const data = await res.json();
+      if (data?.success && data?.code) {
+        setPromoForm((prev) => ({ ...prev, code: data.code }));
+        return;
+      }
+    } catch {
+      // Fallback if offline
+    }
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let suffix = '';
     for (let i = 0; i < 4; i++) {
@@ -115,52 +137,38 @@ export default function AdminSubscriptionsPage() {
 
     setSavingPromo(true);
     try {
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + promoForm.validDays * 24 * 60 * 60 * 1000);
-      const cleanCode = promoForm.code.trim().toUpperCase();
+      const res = await fetch('/api/promo/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: promoForm.code.trim().toUpperCase(),
+          discount_percent: Number(promoForm.discount_percent),
+          applicable_plan: promoForm.applicable_plan,
+          max_uses: Number(promoForm.max_uses),
+          duration_minutes: Number(promoForm.durationMinutes),
+        }),
+      });
 
-      const newPromo: PromoCode = {
-        id: `promo-${Date.now()}`,
-        code: cleanCode,
-        discount_percent: Number(promoForm.discount_percent),
-        applicable_plan: promoForm.applicable_plan,
-        max_uses: Number(promoForm.max_uses),
-        used_count: 0,
-        expires_at: expiresAt.toISOString(),
-        is_active: true,
-        created_at: now.toISOString(),
-      };
+      const result = await res.json();
 
-      // Attempt insert into Supabase promo_codes table if present; always keep local state synced
-      const { data: inserted, error } = await supabase
-        .from('promo_codes')
-        .insert([
-          {
-            code: newPromo.code,
-            discount_percent: newPromo.discount_percent,
-            applicable_plan: newPromo.applicable_plan,
-            max_uses: newPromo.max_uses,
-            used_count: 0,
-            expires_at: newPromo.expires_at,
-            is_active: true,
-          },
-        ])
-        .select()
-        .single();
-
-      if (!error && inserted) {
-        setPromoCodes([inserted, ...promoCodes]);
-      } else {
-        savePromosToLocal([newPromo, ...promoCodes]);
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Failed to generate promo code');
       }
+
+      const createdPromo: PromoCode = result.promo;
+      const updatedList = [
+        createdPromo,
+        ...promoCodes.filter((p) => p.code !== createdPromo.code),
+      ];
+      savePromosToLocal(updatedList);
 
       setShowPromoModal(false);
       setPromoForm({
         code: '',
-        discount_percent: 50,
+        discount_percent: 100,
         applicable_plan: 'All Plans',
         max_uses: 100,
-        validDays: 30,
+        durationMinutes: 30,
       });
     } catch (err: any) {
       alert('Failed to create promo code: ' + err.message);
@@ -325,13 +333,14 @@ export default function AdminSubscriptionsPage() {
             {promoCodes.map((promo) => {
               const isCopied = copiedCodeId === promo.id;
               const isFree = promo.discount_percent === 100;
+              const isExpired = new Date(promo.expires_at) <= new Date();
               return (
                 <div
                   key={promo.id}
                   className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3"
                 >
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="font-mono font-black text-sm text-slate-900 tracking-wide">
                         {promo.code}
                       </span>
@@ -344,10 +353,23 @@ export default function AdminSubscriptionsPage() {
                       >
                         {promo.discount_percent}% OFF
                       </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/70 text-slate-700">
+                        {formatDurationBadge(promo.duration_minutes)}
+                      </span>
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1 truncate">
-                      {promo.applicable_plan} • Limit: {promo.max_uses} uses • Expires{' '}
-                      {new Date(promo.expires_at).toLocaleDateString()}
+                      Used: {promo.used_count || 0}/{promo.max_uses} •{' '}
+                      {isExpired ? (
+                        <span className="text-red-600 font-semibold">Expired</span>
+                      ) : (
+                        <>
+                          Expires{' '}
+                          {new Date(promo.expires_at).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </>
+                      )}
                     </p>
                   </div>
 
@@ -638,16 +660,17 @@ export default function AdminSubscriptionsPage() {
                     Valid Duration
                   </label>
                   <select
-                    value={promoForm.validDays}
+                    value={promoForm.durationMinutes}
                     onChange={(e) =>
-                      setPromoForm({ ...promoForm, validDays: Number(e.target.value) })
+                      setPromoForm({ ...promoForm, durationMinutes: Number(e.target.value) })
                     }
                     className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-red-600 focus:bg-white"
                   >
-                    <option value={1}>24 Hours</option>
-                    <option value={7}>7 Days</option>
-                    <option value={30}>30 Days</option>
-                    <option value={90}>90 Days</option>
+                    <option value={5}>5 Minutes</option>
+                    <option value={30}>30 Minutes</option>
+                    <option value={60}>1 Hour</option>
+                    <option value={360}>6 Hours</option>
+                    <option value={1440}>24 Hours</option>
                   </select>
                 </div>
               </div>

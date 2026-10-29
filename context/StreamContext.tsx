@@ -41,17 +41,23 @@ export interface TimeRemaining {
 }
 
 interface StreamContextType {
-  currentStream: ActiveStream;
+  currentStream: ActiveStream | null;
   channels: StreamChannel[];
   favorites: string[];
   subscription: SubscriptionData;
   timeRemaining: TimeRemaining;
-  setCurrentStream: (stream: ActiveStream) => void;
+  setCurrentStream: (stream: ActiveStream | null) => void;
   playChannel: (channel: StreamChannel) => void;
   playCustomUrl: (url: string, title?: string) => void;
   toggleFavorite: (channelId: string) => void;
   isFavorite: (channelId: string) => boolean;
-  activateSubscription: (phone: string, provider: string, amount?: number, days?: number) => void;
+  activateSubscription: (
+    phone: string,
+    provider: string,
+    amount?: number,
+    days?: number,
+    customExpiresAtMs?: number
+  ) => void;
   cancelSubscription: () => void;
   resetSubscriptionToNewUser: () => void;
 }
@@ -108,7 +114,7 @@ const mapRowToStreamChannel = (row: any): StreamChannel => {
 };
 
 export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentStream, setCurrentStream] = useState<ActiveStream>(defaultStream);
+  const [currentStream, setCurrentStream] = useState<ActiveStream | null>(null);
   const [channels, setChannels] = useState<StreamChannel[]>(CHANNELS);
   const [favorites, setFavorites] = useState<string[]>(['tbc-1', 'bein-xtra-hd']);
   const [subscription, setSubscription] = useState<SubscriptionData>(defaultSubscription);
@@ -131,6 +137,7 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         if (mapped.length > 0) {
           setCurrentStream((prev) => {
+            if (!prev) return null;
             const updatedCurrent = mapped.find((c) => c.id === prev.id);
             if (updatedCurrent) {
               return {
@@ -149,23 +156,7 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 resolution: updatedCurrent.resolution,
               };
             }
-            // If current channel was turned offline or removed, switch to first online channel
-            const first = mapped[0];
-            return {
-              id: first.id,
-              title: first.name,
-              name: first.name,
-              subtitle: first.currentProgram,
-              streamUrl: first.streamUrl,
-              embedUrl: first.embedUrl,
-              backupUrl: first.backupUrl,
-              isLive: first.isLive,
-              logo: first.logo,
-              category: first.category,
-              description: first.description,
-              viewers: first.viewers,
-              resolution: first.resolution,
-            };
+            return null;
           });
         }
       }
@@ -231,7 +222,7 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setSubscription((prev) => {
           const expired = { ...prev, isActive: false };
           try {
-            localStorage.setItem('arenax_subscription', JSON.stringify(expired));
+            localStorage.setItem('arenax_subscription_v2', JSON.stringify(expired));
           } catch (e) {}
           return expired;
         });
@@ -281,17 +272,21 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     phone: string,
     provider: string,
     amount = 2000,
-    days = 30
+    days = 30,
+    customExpiresAtMs?: number
   ) => {
     const activatedAt = Date.now();
-    const expiresAt = activatedAt + days * 24 * 60 * 60 * 1000;
+    const expiresAt =
+      customExpiresAtMs && customExpiresAtMs > activatedAt
+        ? customExpiresAtMs
+        : activatedAt + days * 24 * 60 * 60 * 1000;
     const newSub: SubscriptionData = {
       isActive: true,
       activatedAt,
       expiresAt,
       phone,
       provider,
-      planName: 'ArenaX Pro',
+      planName: provider === 'Promo Code' ? 'ArenaX Promo' : 'ArenaX Pro',
       amount,
     };
 

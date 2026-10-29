@@ -1,9 +1,10 @@
-import { Tv, List, User } from 'lucide-react';
+import { Tv, List, MessageSquare, User } from 'lucide-react';
 
 export const SIDEBAR_ITEMS = [
-  { icon: Tv, label: 'Channels' },
-  { icon: List, label: 'My List' },
-  { icon: User, label: 'Profile' },
+  { icon: Tv, label: 'Channels', href: '/channels' },
+  { icon: List, label: 'My List', href: '/list' },
+  { icon: MessageSquare, label: 'Community', href: '/community' },
+  { icon: User, label: 'Profile', href: '/profile' },
 ];
 
 export const QUALITIES = ['4K UHD', '1080p', '720p', '480p'];

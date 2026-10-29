@@ -69,7 +69,7 @@ export const MyListView: React.FC<MyListViewProps> = ({ onExploreChannels, onGoT
             <div key={channel.id} className="w-full">
               <ChannelIconTile
                 channel={channel}
-                isPlaying={currentStream.id === channel.id}
+                isPlaying={currentStream?.id === channel.id}
                 onSelect={handleSelectChannel}
               />
             </div>

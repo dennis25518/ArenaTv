@@ -3,9 +3,9 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev -p 3000",
+        "dev": "set \"NODE_OPTIONS=--max-http-header-size=131072\" && next dev -p 3000",
         "dev:admin": "npm --prefix admin run dev",
-        "dev:all": "concurrently -n \"USER-3000,ADMIN-3001\" -c \"cyan,magenta\" \"next dev -p 3000\" \"npm --prefix admin run dev\"",
+        "dev:all": "concurrently -n \"USER-3000,ADMIN-3001\" -c \"cyan,magenta\" \"npm run dev\" \"npm --prefix admin run dev\"",
         "build": "next build",
         "build:admin": "npm --prefix admin run build",
         "start": "next start -p 3000",

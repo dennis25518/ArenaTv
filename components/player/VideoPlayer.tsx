@@ -51,9 +51,7 @@ export const VideoPlayer = () => {
     playChannel, 
     playCustomUrl, 
     isFavorite, 
-    toggleFavorite,
-    subscription,
-    activateSubscription
+    toggleFavorite
   } = useStream();
   const { isFullScreen, isFloating, toggleFullScreen, toggleFloating } = useVideoPlayer();
 
@@ -72,7 +70,7 @@ export const VideoPlayer = () => {
   const [customInputUrl, setCustomInputUrl] = useState('');
   const [customInputTitle, setCustomInputTitle] = useState('');
   const [copiedShare, setCopiedShare] = useState(false);
-  const isBookmarked = isFavorite(currentStream.id);
+  const isBookmarked = currentStream ? isFavorite(currentStream.id) : false;
   const [logoError, setLogoError] = useState(false);
 
   const matchedChannel = useMemo(
@@ -269,7 +267,7 @@ export const VideoPlayer = () => {
               if (!useProxy && !effectiveStreamUrl.startsWith('/api/stream-proxy')) {
                 console.warn('Network error detected. Switching to stream proxy fallback...');
                 setUseProxy(true);
-              } else if (currentStream.backupUrl && currentStream.streamUrl !== currentStream.backupUrl) {
+              } else if (currentStream?.backupUrl && currentStream?.streamUrl !== currentStream?.backupUrl) {
                 console.warn('Proxy failed. Trying backup stream...');
                 hls.loadSource(currentStream.backupUrl);
               } else {
@@ -410,6 +408,39 @@ export const VideoPlayer = () => {
     setUseProxy(false);
   };
 
+  if (!currentStream) {
+    return (
+      <div className="relative w-full h-[260px] sm:h-[360px] md:h-[420px] rounded-3xl overflow-hidden border border-[var(--color-border-main)] shadow-xl flex flex-col justify-end p-6 sm:p-10 select-none group">
+        {/* Background Hero Banner */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 group-hover:scale-105"
+          style={{ backgroundImage: "url('/Assets/Slider.jpeg')" }}
+        />
+        
+        {/* Dark Cinematic Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/55 to-black/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+
+        {/* Content Over Banner */}
+        <div className="relative z-10 flex flex-col items-start max-w-xl">
+          <div className="mb-2 sm:mb-2.5">
+            <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-white drop-shadow-md">
+              Welcome to Arena Tv
+            </span>
+          </div>
+
+          <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+            Select a Channel to Watch Live
+          </h2>
+
+          <p className="text-xs sm:text-sm text-gray-200 mt-2 sm:mt-2.5 font-medium leading-relaxed drop-shadow max-w-lg">
+            Stream your favourite news, moviest & sports 24/7
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-4">
       {/* 70 / 30 SPLIT CONTAINER: 70% PLAYER ON LEFT, 30% CHANNEL DETAILS ON RIGHT */}
@@ -446,46 +477,6 @@ export const VideoPlayer = () => {
                 onClick={togglePlay}
               />
             )}
-
-            {/* 30-Day Subscription Expired / Blocked Overlay */}
-            <AnimatePresence>
-              {!subscription.isActive && (
-                <motion.div 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-6 text-center z-50 gap-4"
-                >
-                  <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/40 flex items-center justify-center text-red-500 shadow-xl">
-                    <Lock size={26} className="text-red-500" />
-                  </div>
-                  
-                  <div className="flex flex-col gap-1.5 max-w-md">
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-[10px] font-black text-red-400 uppercase tracking-widest bg-red-950/80 border border-red-800/60 px-3 py-1 rounded-full">
-                        🇹🇿 Kifurushi Kimekwisha
-                      </span>
-                    </div>
-                    <h3 className="text-white text-lg sm:text-xl font-black tracking-tight">
-                      Lipa TZS 2,000 Kuendelea Kutazama
-                    </h3>
-                    <p className="text-gray-400 text-xs font-medium leading-relaxed">
-                      Kifurushi chako cha mwezi kimekwisha. Lipia TZS 2,000 kupitia M-Pesa, Tigo Pesa, Airtel Money au HaloPesa ufunguliwe channels zote bila kikomo kwa siku 30.
-                    </p>
-                  </div>
-
-                  {/* Instant Unblock / Payment Action */}
-                  <button
-                    type="button"
-                    onClick={() => activateSubscription('0754 888 222', 'M-Pesa', 2000, 30)}
-                    className="px-6 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm transition-all shadow-xl flex items-center gap-2 cursor-pointer active:scale-95"
-                  >
-                    <Smartphone size={16} />
-                    <span>Lipa TZS 2,000 (Washa Siku 30 Sasa)</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
 
             {/* Buffering Spinner */}
             <AnimatePresence>

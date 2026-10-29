@@ -9,7 +9,7 @@ interface ChannelSectionRowProps {
   title: string;
   badge?: string;
   channels: StreamChannel[];
-  currentStreamId: string;
+  currentStreamId?: string | null;
   onSelectChannel: (channel: StreamChannel) => void;
 }
 

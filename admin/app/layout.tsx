@@ -19,7 +19,8 @@ import {
   User,
   Activity,
   Sun,
-  Moon
+  Moon,
+  MessageSquare
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import './globals.css';
@@ -107,6 +108,7 @@ export default function RootLayout({
     { name: 'Overview', href: '/', icon: LayoutDashboard },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Subscriptions', href: '/subscriptions', icon: CreditCard },
+    { name: 'Community', href: '/community', icon: MessageSquare },
     { name: 'Activity', href: '/activity', icon: Activity },
   ];
 

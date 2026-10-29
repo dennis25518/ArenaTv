@@ -15,6 +15,9 @@ export async function updateSession(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
       DEFAULT_SUPABASE_KEY,
     {
+      cookieOptions: {
+        name: 'arenax_admin_session',
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -38,12 +41,31 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Clean up any legacy `sb-*` or `arenax_user_session*` cookies to prevent HTTP 431 header overflow
+  for (const cookie of request.cookies.getAll()) {
+    if (
+      cookie.name.startsWith('sb-') ||
+      cookie.name.startsWith('arenax_user_session')
+    ) {
+      supabaseResponse.cookies.delete(cookie.name);
+    }
+  }
+
   const pathname = request.nextUrl.pathname;
   if (pathname !== '/login') {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = '/login';
-      return NextResponse.redirect(url);
+      const redirectResponse = NextResponse.redirect(url);
+      for (const cookie of request.cookies.getAll()) {
+        if (
+          cookie.name.startsWith('sb-') ||
+          cookie.name.startsWith('arenax_user_session')
+        ) {
+          redirectResponse.cookies.delete(cookie.name);
+        }
+      }
+      return redirectResponse;
     }
   }
 

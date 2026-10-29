@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Lock } from 'lucide-react';
 import { SIDEBAR_ITEMS } from '@/constants';
 import { useAuth } from '@/context/AuthContext';
+import { useStream } from '@/context/StreamContext';
 
 interface MobileNavProps {
   active: string;
@@ -12,6 +14,7 @@ interface MobileNavProps {
 
 export const MobileNav = ({ active, setActive }: MobileNavProps) => {
   const { user } = useAuth();
+  const { subscription } = useStream();
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
 
@@ -66,6 +69,7 @@ export const MobileNav = ({ active, setActive }: MobileNavProps) => {
       {SIDEBAR_ITEMS.map((item) => {
         const isActive = active === item.label;
         const isProfileItem = item.label === 'Profile';
+        const isLocked = !isProfileItem && !subscription.isActive;
 
         return (
           <button
@@ -74,6 +78,11 @@ export const MobileNav = ({ active, setActive }: MobileNavProps) => {
             onClick={() => setActive(item.label)}
             className="flex flex-col items-center justify-center gap-1 relative px-3 py-1 cursor-pointer select-none transition-transform active:scale-95"
           >
+            {isLocked && (
+              <span className="absolute top-0.5 right-2 w-3.5 h-3.5 rounded-full bg-red-600 text-white flex items-center justify-center shadow-2xs">
+                <Lock size={8} />
+              </span>
+            )}
             {isProfileItem && user ? (
               <div className="w-5 h-5 flex items-center justify-center">
                 <img

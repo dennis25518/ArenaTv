@@ -25,6 +25,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const MASTER_ADMIN_EMAIL = 'isdorydennis18@gmail.com';
+
+const isAdminIdentity = (targetUser?: User | null, targetProfile?: Partial<UserProfile> | null): boolean => {
+  const email = (targetUser?.email || targetProfile?.email || '').trim().toLowerCase();
+  const role = targetUser?.user_metadata?.role || targetProfile?.role;
+  return email === MASTER_ADMIN_EMAIL || role === 'admin';
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -33,8 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const supabase = createClient();
 
+  const clearAdminLeakSession = async () => {
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      // Ignore signout errors
+    }
+    setUser(null);
+    setProfile(null);
+    setSession(null);
+  };
+
   const fetchProfile = async (userId: string, fallbackUser?: User | null) => {
     try {
+      const targetUser = fallbackUser || user;
+      if (isAdminIdentity(targetUser)) {
+        await clearAdminLeakSession();
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, email, role, created_at')
@@ -42,15 +67,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (!error && data) {
+        if (isAdminIdentity(targetUser, data)) {
+          await clearAdminLeakSession();
+          return;
+        }
         setProfile(data as UserProfile);
         return;
       }
 
       // Fallback: If no profile row exists, write directly to database
-      const targetUser = fallbackUser || user;
       const userName = targetUser?.user_metadata?.name || targetUser?.email?.split('@')[0] || 'User';
       const userEmail = targetUser?.email || null;
-      const userRole = (targetUser?.user_metadata?.role === 'admin' ? 'admin' : 'user') as 'admin' | 'user';
+      const userRole = 'user' as const;
 
       const { data: newProfile } = await supabase
         .from('profiles')
@@ -73,11 +101,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check active session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user && isAdminIdentity(session.user)) {
+        await clearAdminLeakSession();
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id, session.user);
+        await fetchProfile(session.user.id, session.user);
       }
       setLoading(false);
     });
@@ -85,6 +118,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen to real-time auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (session?.user && isAdminIdentity(session.user)) {
+          await clearAdminLeakSession();
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -104,6 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (name: string, email: string, password: string) => {
     try {
+      if (email.trim().toLowerCase() === MASTER_ADMIN_EMAIL) {
+        return { error: { message: 'This email is reserved for system administration.' } };
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -141,6 +184,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      if (email.trim().toLowerCase() === MASTER_ADMIN_EMAIL) {
+        return { error: { message: 'Admin accounts cannot sign in on the customer site. Please use the Admin Portal.' } };
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -149,6 +196,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) return { error };
 
       if (data.user) {
+        if (isAdminIdentity(data.user)) {
+          await clearAdminLeakSession();
+          return { error: { message: 'Admin accounts cannot sign in on the customer site. Please use the Admin Portal.' } };
+        }
         setUser(data.user);
         await fetchProfile(data.user.id, data.user);
       }

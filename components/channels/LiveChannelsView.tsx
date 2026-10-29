@@ -49,7 +49,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="Local"
           channels={localChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>
@@ -59,7 +59,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="Movies"
           channels={movieChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>
@@ -69,7 +69,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="Cartoons"
           channels={cartoonChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>
@@ -79,7 +79,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="Animals & Nature"
           channels={animalChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>
@@ -89,7 +89,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="Sports"
           channels={sportsChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>
@@ -99,7 +99,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="News"
           channels={newsChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>
@@ -109,7 +109,7 @@ export const LiveChannelsView: React.FC = () => {
         <ChannelSectionRow
           title="Music"
           channels={musicChannels}
-          currentStreamId={currentStream.id}
+          currentStreamId={currentStream?.id}
           onSelectChannel={handleSelectChannel}
         />
       </section>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   User as UserIcon, 
   CheckCircle2, 
@@ -18,7 +19,8 @@ import {
   LogOut,
   ShieldCheck,
   Zap,
-  HelpCircle
+  HelpCircle,
+  Ticket
 } from 'lucide-react';
 import { useStream } from '@/context/StreamContext';
 import { useAuth } from '@/context/AuthContext';
@@ -46,6 +48,7 @@ const getProviderLogo = (providerName: string) => {
 };
 
 export const ProfileView: React.FC<ProfileViewProps> = () => {
+  const router = useRouter();
   const { user, profile, signUp, signIn, signOut } = useAuth();
   const { 
     subscription, 
@@ -75,7 +78,13 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
           const expiresMs = new Date(sub.expires_at).getTime();
           if (expiresMs > Date.now()) {
             const daysRemaining = Math.max(1, Math.ceil((expiresMs - Date.now()) / (24 * 60 * 60 * 1000)));
-            activateSubscription(sub.phone || '', sub.provider || 'M-Pesa', Number(sub.amount) || 2000, daysRemaining);
+            activateSubscription(
+              sub.provider === 'Promo Code' ? 'Admin' : sub.phone || '',
+              sub.provider || 'M-Pesa',
+              Number(sub.amount) ?? 2000,
+              daysRemaining,
+              expiresMs
+            );
             return;
           }
         }
@@ -105,6 +114,14 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [ussdPrompt, setUssdPrompt] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState<string | null>(null);
+
+  // Promo Code Form State
+  const [promoCodeInput, setPromoCodeInput] = useState('');
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
+  const [promoFeedback, setPromoFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   // Repayment form state for active paying customer
   const [isRepaying, setIsRepaying] = useState(false);
@@ -270,6 +287,131 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
       setPaymentMessage('Hitilafu ya mtandao. Tafadhali jaribu tena.');
       setUssdPrompt(false);
       setIsProcessing(false);
+    }
+  };
+
+  const handleApplyPromoCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = promoCodeInput.trim().toUpperCase();
+    if (!cleanCode) {
+      setPromoFeedback({ type: 'error', message: 'Please enter a promo code.' });
+      return;
+    }
+
+    setIsApplyingPromo(true);
+    setPromoFeedback(null);
+
+    try {
+      const res = await fetch('/api/promo/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: cleanCode,
+          userId: user?.id || null,
+          userEmail: profile?.email || user?.email || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const expiresAtMs = data.expires_at
+          ? new Date(data.expires_at).getTime()
+          : Date.now() + (Number(data.duration_minutes) || 30) * 60 * 1000;
+
+        setPromoFeedback({
+          type: 'success',
+          message: data.message || 'Promo code applied! Unlocking live streams...',
+        });
+        setPromoCodeInput('');
+
+        setTimeout(() => {
+          activateSubscription(
+            'Admin',
+            'Promo Code',
+            0,
+            1,
+            expiresAtMs
+          );
+        }, 600);
+        return;
+      }
+
+      // Fallback check in localStorage if SQL migration hasn't been run in Supabase yet
+      if (data.notFoundInDb && typeof window !== 'undefined') {
+        const localSaved = localStorage.getItem('arenax_admin_promo_codes');
+        if (localSaved) {
+          const parsedPromos = JSON.parse(localSaved) as any[];
+          const matched = parsedPromos.find(
+            (p) => String(p.code).toUpperCase() === cleanCode && p.is_active !== false
+          );
+          if (matched) {
+            const promoExpMs = new Date(matched.expires_at).getTime();
+            if (promoExpMs <= Date.now()) {
+              setPromoFeedback({ type: 'error', message: 'This promo code has expired.' });
+              return;
+            }
+            if ((matched.used_count || 0) >= (matched.max_uses || 100)) {
+              setPromoFeedback({
+                type: 'error',
+                message: 'This promo code has reached its usage limit.',
+              });
+              return;
+            }
+            const durationMinutes = Math.min(
+              1440,
+              Math.max(1, Number(matched.duration_minutes) || 30)
+            );
+            const subExpiresAtMs = Date.now() + durationMinutes * 60 * 1000;
+
+            matched.used_count = (matched.used_count || 0) + 1;
+            localStorage.setItem('arenax_admin_promo_codes', JSON.stringify(parsedPromos));
+
+            if (user) {
+              try {
+                await supabase.from('subscriptions').insert({
+                  user_id: user.id,
+                  plan_name: `ArenaX Promo (${cleanCode})`,
+                  provider: 'Promo Code',
+                  phone: 'Admin',
+                  amount: 0,
+                  status: 'active',
+                  activated_at: new Date().toISOString(),
+                  expires_at: new Date(subExpiresAtMs).toISOString(),
+                });
+              } catch {}
+            }
+
+            setPromoFeedback({
+              type: 'success',
+              message: `Promo code ${cleanCode} applied! Free access activated.`,
+            });
+            setPromoCodeInput('');
+            setTimeout(() => {
+              activateSubscription(
+                'Admin',
+                'Promo Code',
+                0,
+                1,
+                subExpiresAtMs
+              );
+            }, 600);
+            return;
+          }
+        }
+      }
+
+      setPromoFeedback({
+        type: 'error',
+        message: data.message || 'Invalid or expired promo code.',
+      });
+    } catch (err) {
+      setPromoFeedback({
+        type: 'error',
+        message: 'Network error while verifying promo code. Please try again.',
+      });
+    } finally {
+      setIsApplyingPromo(false);
     }
   };
 
@@ -648,6 +790,65 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                       </div>
                     )}
                   </form>
+
+                  {/* Promo Code Section (Right below Choose Your Network) */}
+                  <div className="pt-3 border-t border-[var(--color-border-main)] flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-black text-[var(--color-text-primary)] uppercase tracking-wide flex items-center gap-1.5">
+                        <Ticket size={14} className="text-red-600" />
+                        <span>Have a Promo Code?</span>
+                      </label>
+                      <span className="text-[11px] font-semibold text-[var(--color-text-secondary)]">
+                        Redeem free trial access
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleApplyPromoCode} className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          type="text"
+                          placeholder="Enter code (e.g. VIPFREE-8K2M)"
+                          value={promoCodeInput}
+                          onChange={(e) => {
+                            setPromoCodeInput(e.target.value.toUpperCase());
+                            if (promoFeedback) setPromoFeedback(null);
+                          }}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 dark:bg-[#1a1a24] border border-[var(--color-border-main)] text-xs sm:text-sm font-mono font-bold uppercase text-[var(--color-text-primary)] placeholder:font-sans placeholder:font-normal placeholder-gray-400 focus:outline-none focus:border-red-600 transition-colors"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isApplyingPromo || !promoCodeInput.trim()}
+                        className="px-4 sm:px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 disabled:bg-gray-300 dark:disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
+                      >
+                        {isApplyingPromo ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            <span>Checking...</span>
+                          </>
+                        ) : (
+                          <span>Apply</span>
+                        )}
+                      </button>
+                    </form>
+
+                    {promoFeedback && (
+                      <div
+                        className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                          promoFeedback.type === 'success'
+                            ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400'
+                        }`}
+                      >
+                        {promoFeedback.type === 'success' ? (
+                          <CheckCircle2 size={15} className="shrink-0 text-emerald-600" />
+                        ) : (
+                          <AlertCircle size={15} className="shrink-0 text-red-600" />
+                        )}
+                        <span>{promoFeedback.message}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : (
                 /* ========================================================= */
@@ -700,17 +901,28 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
                     {/* Meta details */}
                     <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-main)] text-xs">
                       <div className="flex items-center gap-2">
-                        <img 
-                          src={getProviderLogo(subscription.provider || 'Vodacom')} 
-                          alt={subscription.provider || 'Provider'} 
-                          className="w-5 h-5 rounded object-contain" 
-                        />
+                        {subscription.provider === 'Promo Code' ? (
+                          <div className="w-5 h-5 rounded bg-red-600/10 text-red-600 flex items-center justify-center">
+                            <Ticket size={13} />
+                          </div>
+                        ) : (
+                          <img 
+                            src={getProviderLogo(subscription.provider || 'Vodacom')} 
+                            alt={subscription.provider || 'Provider'} 
+                            className="w-5 h-5 rounded object-contain" 
+                          />
+                        )}
                         <span className="font-bold text-[var(--color-text-primary)]">
                           {subscription.provider || 'M-Pesa'}
                         </span>
                       </div>
                       <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                        Paid By: <span className="font-bold text-[var(--color-text-primary)]">{subscription.phone || '0754 888 222'}</span>
+                        {subscription.provider === 'Promo Code' ? 'Activated Via:' : 'Paid By:'}{' '}
+                        <span className="font-bold text-[var(--color-text-primary)]">
+                          {subscription.provider === 'Promo Code'
+                            ? 'Admin'
+                            : subscription.phone || '0754 888 222'}
+                        </span>
                       </span>
                     </div>
                   </div>
@@ -778,7 +990,7 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
               <div className="shrink-0">
                 <button
                   type="button"
-                  onClick={() => signOut()}
+                  onClick={() => router.push('/signout')}
                   className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
                 >
                   <LogOut size={16} />
