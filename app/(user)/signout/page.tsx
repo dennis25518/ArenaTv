@@ -17,6 +17,11 @@ export default function SignOutPage() {
     async function performSignOut() {
       try {
         resetSubscriptionToNewUser();
+        // Remove dark mode on logout so landing & auth stay seamlessly plain and uniform
+        document.documentElement.classList.remove('dark');
+        try {
+          localStorage.removeItem('arenax_theme');
+        } catch (_) {}
         await signOut();
       } catch (e) {
         console.warn('Sign out note:', e);
