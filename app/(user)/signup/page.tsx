@@ -80,22 +80,11 @@ function SignUpContent() {
       </header>
 
       {/* Main Centered Sign Up Form */}
-      <main className="flex-1 flex flex-col items-center justify-start pt-10 sm:pt-16 px-5 pb-16">
+      <main className="flex-1 flex flex-col items-center justify-start pt-12 sm:pt-20 px-5 pb-16">
         <div className="w-full max-w-[440px] flex flex-col">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/15 border border-red-500/25 text-red-400 text-xs font-bold uppercase tracking-wider mb-3 w-fit">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-            ArenaTV Registration
-          </div>
-
           <h1 className="text-3xl sm:text-[34px] font-black tracking-tight text-white leading-tight">
-            Create your ArenaTV Account
+            Signup to Arena Tv
           </h1>
-          <p className="text-base sm:text-lg text-white/75 font-normal mt-2">
-            Already registered?{' '}
-            <Link href="/signin" className="text-red-400 font-semibold hover:underline">
-              Sign in to your account.
-            </Link>
-          </p>
 
           {error && (
             <div className="mt-5 p-3.5 rounded-md bg-[#e50914]/15 border border-[#e50914]/40 text-red-200 text-xs sm:text-sm flex items-center gap-2.5">
@@ -104,9 +93,9 @@ function SignUpContent() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3.5">
+          <form onSubmit={handleSubmit} className="mt-7 flex flex-col gap-4">
             <div>
-              <label className="text-xs font-bold text-white/80 block mb-1">
+              <label className="text-xs font-bold text-white/90 block mb-2">
                 Full Name
               </label>
               <input
@@ -115,12 +104,12 @@ function SignUpContent() {
                 placeholder="e.g. John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-13 px-4 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                className="w-full h-14 sm:h-15 px-5 rounded-lg bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-white/80 block mb-1">
+              <label className="text-xs font-bold text-white/90 block mb-2">
                 Email Address
               </label>
               <input
@@ -129,12 +118,12 @@ function SignUpContent() {
                 placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-13 px-4 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                className="w-full h-14 sm:h-15 px-5 rounded-lg bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
               />
             </div>
 
             <div className="relative">
-              <label className="text-xs font-bold text-white/80 block mb-1">
+              <label className="text-xs font-bold text-white/90 block mb-2">
                 Create Password (min. 6 characters)
               </label>
               <div className="relative">
@@ -145,15 +134,15 @@ function SignUpContent() {
                   placeholder="Create a strong password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full h-13 pl-4 pr-12 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                  className="w-full h-14 sm:h-15 pl-5 pr-14 rounded-lg bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors cursor-pointer"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors cursor-pointer p-1"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
                 </button>
               </div>
             </div>
@@ -161,7 +150,7 @@ function SignUpContent() {
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 w-full h-12 sm:h-13 rounded-md bg-[#e50914] hover:bg-red-700 disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
+              className="mt-3 w-full h-12 sm:h-12.5 rounded-xl bg-[#e50914] hover:bg-red-700 disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg active:scale-[0.99]"
             >
               {loading ? (
                 <>
@@ -169,7 +158,7 @@ function SignUpContent() {
                   <span>Creating account...</span>
                 </>
               ) : (
-                <span>Create ArenaTV Account</span>
+                <span>Signup to Arena Tv</span>
               )}
             </button>
           </form>
@@ -189,10 +178,6 @@ function SignUpContent() {
               </Link>
             </div>
           </div>
-
-          <p className="mt-8 text-xs text-white/40 leading-relaxed text-center">
-            © {new Date().getFullYear()} ArenaTV. Secure authentication powered by Supabase. ArenaTV is an independent live television streaming platform.
-          </p>
         </div>
       </main>
     </div>

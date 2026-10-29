@@ -171,11 +171,6 @@ export const LandingPage: React.FC = () => {
 
         {/* Center Hero Content (Distinct ArenaTV Live Platform Identity) */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-8 max-w-3xl mx-auto py-12 sm:py-16">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-600/20 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-            ArenaTV Live Streaming Network
-          </div>
-
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] drop-shadow-sm">
             Stream 50+ Live Channels, Sports & Movies 24/7
           </h1>
