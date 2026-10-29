@@ -143,13 +143,13 @@ export const LandingPage: React.FC = () => {
           backgroundImage: "url('/Assets/hero-bg.jpg')",
         }}
       >
-        {/* Cinematic Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/55 to-black/95" />
+        {/* Cinematic Deep Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/92 via-black/80 to-black/98 backdrop-blur-[1.5px]" />
 
-        {/* Top Navbar (Inside the Hero Element — No separate bar or border) */}
+        {/* Top Navbar */}
         <header className="relative z-10 w-full max-w-7xl mx-auto pl-7 pr-4 sm:pl-14 sm:pr-8 lg:pl-24 lg:pr-12 pt-5 sm:pt-7 flex items-center justify-between">
-          {/* Left: Official Transparent ArenaTV Logo */}
-          <div className="flex items-center select-none">
+          {/* Left: ArenaTV Official Logo */}
+          <div className="flex items-center gap-3 select-none">
             <img
               src="/Assets/ArenaTV Logo.png"
               alt="ArenaTV"
@@ -169,58 +169,55 @@ export const LandingPage: React.FC = () => {
           </div>
         </header>
 
-        {/* Center Hero Content (Netflix Layout) */}
+        {/* Center Hero Content (Distinct ArenaTV Live Platform Identity) */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-8 max-w-3xl mx-auto py-12 sm:py-16">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-600/20 border border-red-500/30 text-red-400 text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            ArenaTV Live Streaming Network
+          </div>
+
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] drop-shadow-sm">
-            Unlimited Live TV, Sports, Movies, and more
+            Stream 50+ Live Channels, Sports & Movies 24/7
           </h1>
 
           <p className="text-base sm:text-xl font-bold text-white/95 mt-4 sm:mt-5">
-            Starts at 2,000 TZS. Cancel anytime.
+            Premier League, World News, Local TV & Cinema. Instant access on phone, tablet & TV.
           </p>
 
-          <p className="text-xs sm:text-base text-white/85 font-medium mt-5 sm:mt-6 max-w-xl">
-            Ready to watch? Enter your email to create your account or redeem a free promo code.
+          <p className="text-xs sm:text-base text-white/80 font-medium mt-3 sm:mt-4 max-w-xl">
+            Enter your email to create your ArenaTV account or activate with a free promo code.
           </p>
 
-          {/* Netflix-style Email + Get Started Bar */}
+          {/* Email + Start Watching Bar */}
           <form
             onSubmit={handleHeroGetStarted}
-            className="mt-4 sm:mt-5 w-full max-w-xl flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-2 px-2 sm:px-0"
+            className="mt-5 w-full max-w-xl flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-2 px-2 sm:px-0"
           >
             <input
               type="email"
               required
-              placeholder="Email address"
+              placeholder="Enter your email address"
               value={heroEmail}
               onChange={(e) => setHeroEmail(e.target.value)}
-              className="w-full sm:flex-1 h-12 sm:h-14 py-3 px-4 rounded-md bg-black/65 backdrop-blur-xs text-white placeholder-neutral-300 text-base font-normal border border-white/40 focus:outline-none focus:border-white focus:ring-1 focus:ring-white shadow-lg"
+              className="w-full sm:flex-1 h-12 sm:h-14 py-3 px-4 rounded-md bg-black/75 backdrop-blur-xs text-white placeholder-neutral-400 text-base font-normal border border-white/35 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 shadow-lg"
             />
             <button
               type="submit"
-              className="w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-md bg-[#e50914] hover:bg-red-700 text-white font-bold text-lg sm:text-xl flex items-center justify-center gap-1.5 shrink-0 shadow-lg transition-all cursor-pointer active:scale-98"
+              className="w-auto h-12 sm:h-14 px-6 sm:px-8 rounded-md bg-[#e50914] hover:bg-red-700 text-white font-bold text-base sm:text-lg flex items-center justify-center gap-2 shrink-0 shadow-lg transition-all cursor-pointer active:scale-98"
             >
-              <span>Get Started</span>
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+              <span>Start Watching</span>
+              <ArrowRight className="w-5 h-5 stroke-[2.5]" />
             </button>
           </form>
         </div>
 
-        {/* Bottom Spacer for Curved Arch Overlap */}
-        <div className="h-10 sm:h-14" />
+        {/* Bottom Spacer */}
+        <div className="h-6 sm:h-10" />
       </section>
 
-      {/* NETFLIX CURVED ARCH SEPARATOR */}
-      <div className="relative w-full h-16 sm:h-24 -mt-10 sm:-mt-14 z-20 overflow-hidden pointer-events-none">
-        <div
-          className="absolute left-1/2 -translate-x-1/2 top-0 w-[180%] sm:w-[140%] lg:w-[125%] h-[180px] sm:h-[220px] rounded-t-[100%]"
-          style={{
-            background:
-              'linear-gradient(to right, rgba(33, 13, 22, 1) 16%, rgba(184, 40, 105, 1), rgba(229, 9, 20, 1), rgba(184, 40, 105, 1), rgba(33, 13, 22, 1) 84%)',
-          }}
-        >
-          <div className="absolute inset-x-0 top-[4px] bottom-0 rounded-t-[100%] bg-black" />
-        </div>
+      {/* MODERN ARENATV GLOWING DIVIDER */}
+      <div className="relative w-full h-4 z-20 overflow-hidden pointer-events-none">
+        <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-red-600/50 to-transparent" />
       </div>
 
       {/* =================================================================== */}
@@ -352,9 +349,16 @@ export const LandingPage: React.FC = () => {
         </section>
       </main>
 
-      {/* 4. FOOTER */}
-      <footer className="py-6 px-4 sm:px-8 bg-black border-t border-white/10 text-center text-xs text-neutral-500">
-        © {new Date().getFullYear()} ArenaTV Live Streaming. All rights reserved.
+      {/* 4. OFFICIAL PLATFORM FOOTER */}
+      <footer className="py-8 px-4 sm:px-8 bg-[#09090d] border-t border-white/10 text-center text-xs text-neutral-400 flex flex-col items-center gap-2.5">
+        <div className="flex items-center gap-2 text-white font-bold text-sm">
+          <span>ArenaTV</span>
+          <span className="text-neutral-600">•</span>
+          <span className="text-neutral-400 font-normal text-xs">Official Live TV & Sports Network</span>
+        </div>
+        <p className="max-w-xl text-neutral-500 text-[11px] leading-relaxed">
+          © {new Date().getFullYear()} ArenaTV. All rights reserved. Secure user authentication powered by Supabase. ArenaTV is an independent online live television broadcast platform.
+        </p>
       </footer>
     </div>
   );

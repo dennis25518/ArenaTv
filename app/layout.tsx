@@ -2,12 +2,21 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'ArenaTV - Live Video Streaming',
-  description: 'Premium sports and live TV streaming experience',
+  title: 'ArenaTV - Live Television & Sports Streaming',
+  description: 'Official ArenaTV online platform for 24/7 sports, live news, and entertainment streaming.',
+  applicationName: 'ArenaTV',
+  authors: [{ name: 'ArenaTV Network' }],
+  keywords: ['ArenaTV', 'Live TV', 'Sports Streaming', 'Football', 'Television'],
   icons: {
     icon: '/Assets/Red TV Favicon.png',
     shortcut: '/Assets/Red TV Favicon.png',
     apple: '/Assets/Red TV Favicon.png',
+  },
+  openGraph: {
+    title: 'ArenaTV - Live Television & Sports Streaming',
+    description: 'Official ArenaTV online platform for 24/7 sports, live news, and entertainment streaming.',
+    siteName: 'ArenaTV',
+    type: 'website',
   },
 };
 

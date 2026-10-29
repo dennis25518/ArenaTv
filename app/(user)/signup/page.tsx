@@ -80,15 +80,20 @@ function SignUpContent() {
       </header>
 
       {/* Main Centered Sign Up Form */}
-      <main className="flex-1 flex flex-col items-center justify-start pt-12 sm:pt-20 px-5 pb-16">
+      <main className="flex-1 flex flex-col items-center justify-start pt-10 sm:pt-16 px-5 pb-16">
         <div className="w-full max-w-[440px] flex flex-col">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/15 border border-red-500/25 text-red-400 text-xs font-bold uppercase tracking-wider mb-3 w-fit">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+            ArenaTV Registration
+          </div>
+
           <h1 className="text-3xl sm:text-[34px] font-black tracking-tight text-white leading-tight">
-            Create your account to get started
+            Create your ArenaTV Account
           </h1>
           <p className="text-base sm:text-lg text-white/75 font-normal mt-2">
-            Already have an account?{' '}
-            <Link href="/signin" className="text-white font-semibold hover:underline">
-              Sign in here.
+            Already registered?{' '}
+            <Link href="/signin" className="text-red-400 font-semibold hover:underline">
+              Sign in to your account.
             </Link>
           </p>
 
@@ -101,51 +106,62 @@ function SignUpContent() {
 
           <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3.5">
             <div>
+              <label className="text-xs font-bold text-white/80 block mb-1">
+                Full Name
+              </label>
               <input
                 type="text"
                 required
-                placeholder="Full name"
+                placeholder="e.g. John Doe"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-14 px-4 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/60 text-base focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
+                className="w-full h-13 px-4 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
               />
             </div>
 
             <div>
+              <label className="text-xs font-bold text-white/80 block mb-1">
+                Email Address
+              </label>
               <input
                 type="email"
                 required
-                placeholder="Email address"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-14 px-4 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/60 text-base focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
+                className="w-full h-13 px-4 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
               />
             </div>
 
             <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                required
-                minLength={6}
-                placeholder="Create a password (min. 6 characters)"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-14 pl-4 pr-12 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/60 text-base focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors cursor-pointer"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+              <label className="text-xs font-bold text-white/80 block mb-1">
+                Create Password (min. 6 characters)
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  placeholder="Create a strong password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full h-13 pl-4 pr-12 rounded-md bg-[#141112]/90 border border-white/25 text-white placeholder-white/40 text-base focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 w-full h-12 sm:h-13 rounded-md bg-[#e50914] hover:bg-red-700 disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
+              className="mt-2 w-full h-12 sm:h-13 rounded-md bg-[#e50914] hover:bg-red-700 disabled:opacity-60 text-white font-bold text-base flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
             >
               {loading ? (
                 <>
@@ -153,40 +169,29 @@ function SignUpContent() {
                   <span>Creating account...</span>
                 </>
               ) : (
-                <span>Continue</span>
+                <span>Create ArenaTV Account</span>
               )}
             </button>
           </form>
 
-          {/* Get Help Accordion (Netflix Style) */}
-          <div className="mt-8">
-            <button
-              type="button"
-              onClick={() => setShowHelp(!showHelp)}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-white/90 hover:underline cursor-pointer"
-            >
-              <span>Get Help</span>
-              <ChevronDown
-                size={16}
-                className={`transition-transform duration-200 ${showHelp ? 'rotate-180' : ''}`}
-              />
-            </button>
-
-            {showHelp && (
-              <div className="mt-3 flex flex-col gap-2 text-sm text-white/70 pl-1 animate-fadeIn">
-                <Link href="/signin" className="hover:text-white hover:underline w-fit">
-                  Sign in with an existing account
-                </Link>
-                <Link href="/" className="hover:text-white hover:underline w-fit">
-                  Return to ArenaTV home page
-                </Link>
-              </div>
-            )}
+          {/* Account Assistance */}
+          <div className="mt-8 pt-5 border-t border-white/10 flex flex-col gap-3">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="text-white/60">Already registered?</span>
+              <Link href="/signin" className="text-red-400 font-bold hover:underline">
+                Sign in to your account
+              </Link>
+            </div>
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="text-white/60">Need to return?</span>
+              <Link href="/" className="text-white/80 hover:underline">
+                Back to Home Page
+              </Link>
+            </div>
           </div>
 
-          <p className="mt-8 text-xs text-white/45 leading-relaxed">
-            By continuing, you can activate your ArenaX Pro subscription via Mobile Money (2,000
-            TZS/month) or apply a free promo code on your profile.
+          <p className="mt-8 text-xs text-white/40 leading-relaxed text-center">
+            © {new Date().getFullYear()} ArenaTV. Secure authentication powered by Supabase. ArenaTV is an independent live television streaming platform.
           </p>
         </div>
       </main>
