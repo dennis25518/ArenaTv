@@ -314,3 +314,4 @@ export const FloatingMiniPlayer: React.FC = () => {
     </AnimatePresence>
   );
 };
+
