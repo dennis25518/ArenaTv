@@ -13,7 +13,7 @@ interface HeaderProps {
   onLogoutClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ setActive }) => {
+export const Header: React.FC<HeaderProps> = ({ setActive, user, onLogin }) => {
   const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -41,26 +41,20 @@ export const Header: React.FC<HeaderProps> = ({ setActive }) => {
 
   return (
     <header className="h-[64px] lg:h-[72px] bg-white border-b border-[var(--color-border-main)] px-4 lg:px-8 flex items-center justify-between sticky top-0 z-40 w-full transition-colors">
-      {/* Far Left: ArenaX Logo */}
+      {/* Far Left: ArenaTV Official Logo */}
       <div 
         onClick={() => setActive && setActive('Channels')}
         className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0"
       >
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[var(--color-brand)] to-[#ff4d4f] flex items-center justify-center text-white font-black text-lg shadow-md group-hover:scale-105 transition-transform">
-          A
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-xl font-extrabold tracking-tight text-[var(--color-text-primary)]">
-            ArenaX
-          </span>
-          <span className="bg-[var(--color-live-red)] text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm animate-pulse">
-            Live
-          </span>
-        </div>
+        <img 
+          src="/Assets/ArenaTV Logo.png" 
+          alt="ArenaTV" 
+          className="h-11 sm:h-12 lg:h-14 w-auto object-contain group-hover:scale-105 transition-transform drop-shadow-xs" 
+        />
       </div>
 
       {/* Far Right: Dark / Light Theme Toggle */}
-      <div className="flex items-center shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <button
           type="button"
           onClick={toggleTheme}

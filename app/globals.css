@@ -183,3 +183,12 @@ body {
 .scale-up {
   animation: scale-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Hide WebKit / iOS Safari default translucent play button overlay */
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { StreamProvider } from '@/context/StreamContext';
 
 export const metadata: Metadata = {
-  title: 'ArenaX - Live Video Streaming',
+  title: 'ArenaTV - Live Video Streaming',
   description: 'Premium sports and live TV streaming experience',
+  icons: {
+    icon: '/Assets/Red TV Favicon.png',
+    shortcut: '/Assets/Red TV Favicon.png',
+    apple: '/Assets/Red TV Favicon.png',
+  },
 };
 
 export default function RootLayout({
@@ -32,11 +36,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet" />
+        <link rel="icon" type="image/png" href="/Assets/Red TV Favicon.png" />
       </head>
       <body>
-        <StreamProvider>
-          {children}
-        </StreamProvider>
+        {children}
       </body>
     </html>
   );

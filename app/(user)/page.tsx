@@ -11,10 +11,12 @@ import { ProfileView } from '@/components/profile/ProfileView';
 import { LogoutDialog } from '@/components/modals/LogoutDialog';
 import { SubscriptionModal } from '@/components/modals/SubscriptionModal';
 import { User, PaymentMethod, Plan } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('Channels');
   const [mounted, setMounted] = useState(false);
+  const { user: authUser, profile, signOut } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -34,12 +36,14 @@ export default function Home() {
     }
   }, [activeTab, mounted]);
 
-  const [user, setUser] = useState<User | null>({
-    name: 'tech tech',
-    email: 'techtech@gmail.com',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-    isPremium: false,
-  });
+  const user: User | null = authUser
+    ? {
+        name: profile?.name || authUser.email?.split('@')[0] || 'Mwanachama',
+        email: profile?.email || authUser.email || '',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+        isPremium: false,
+      }
+    : null;
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [showSubModal, setShowSubModal] = useState(false);
@@ -64,16 +68,11 @@ export default function Home() {
   ]);
 
   const handleLogin = () => {
-    setUser({
-      name: 'tech tech',
-      email: 'techtech@gmail.com',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-      isPremium: false,
-    });
+    setActiveTab('Profile');
   };
 
-  const handleLogout = () => {
-    setUser(null);
+  const handleLogout = async () => {
+    await signOut();
     setShowLogoutDialog(false);
   };
 
@@ -87,12 +86,6 @@ export default function Home() {
   };
 
   const handlePaymentConfirm = (method: PaymentMethod) => {
-    if (user) {
-      setUser({
-        ...user,
-        isPremium: true,
-      });
-    }
     setShowSubModal(false);
   };
 
@@ -140,14 +133,12 @@ export default function Home() {
                 {activeTab === 'Channels' ? (
                   <LiveChannelsView />
                 ) : activeTab === 'My List' ? (
-                  <MyListView onExploreChannels={() => setActiveTab('Channels')} />
-                ) : activeTab === 'Profile' ? (
-                  <ProfileView
-                    user={user}
-                    onLogin={handleLogin}
-                    onLogout={() => setShowLogoutDialog(true)}
-                    onSubscribe={handleSubscribe}
+                  <MyListView
+                    onExploreChannels={() => setActiveTab('Channels')}
+                    onGoToLogin={() => setActiveTab('Profile')}
                   />
+                ) : activeTab === 'Profile' ? (
+                  <ProfileView />
                 ) : (
                   <div className="premium-card p-20 flex flex-col items-center justify-center text-center gap-4 bg-white/50 backdrop-blur-sm">
                     <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-sm">

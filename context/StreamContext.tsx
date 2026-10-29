@@ -1,7 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { CHANNELS, StreamChannel } from '@/data/channels';
+import { createClient } from '@/lib/supabase/client';
 
 export interface ActiveStream {
   id: string;
@@ -82,12 +83,116 @@ const defaultSubscription: SubscriptionData = {
 
 const StreamContext = createContext<StreamContextType | undefined>(undefined);
 
+const mapRowToStreamChannel = (row: any): StreamChannel => {
+  const staticMatch = CHANNELS.find((c) => c.id === row.id);
+  const streamUrl = row.stream_url || staticMatch?.streamUrl || '';
+  const embedUrl =
+    row.embed_url ||
+    (streamUrl.startsWith('/api/embed/') ? streamUrl : staticMatch?.embedUrl);
+
+  return {
+    id: row.id,
+    name: row.name,
+    category: (row.category || staticMatch?.category || 'General') as StreamChannel['category'],
+    logo: row.logo || staticMatch?.logo || 'https://i.imgur.com/OmiVZ1u.png',
+    currentProgram: row.current_program || staticMatch?.currentProgram || 'Live Broadcast',
+    streamUrl,
+    embedUrl,
+    backupUrl: row.backup_url || staticMatch?.backupUrl || undefined,
+    isLive: row.is_live ?? true,
+    viewers: row.viewers || staticMatch?.viewers || '10K',
+    description: row.description || staticMatch?.description || '',
+    resolution: row.resolution || staticMatch?.resolution || '1080p FHD',
+    country: row.country || staticMatch?.country || (row.category === 'Tanzania' ? 'TZ' : undefined),
+  };
+};
+
 export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentStream, setCurrentStream] = useState<ActiveStream>(defaultStream);
-  const [channels] = useState<StreamChannel[]>(CHANNELS);
+  const [channels, setChannels] = useState<StreamChannel[]>(CHANNELS);
   const [favorites, setFavorites] = useState<string[]>(['tbc-1', 'bein-xtra-hd']);
   const [subscription, setSubscription] = useState<SubscriptionData>(defaultSubscription);
   const [now, setNow] = useState<number>(Date.now());
+  const supabase = createClient();
+
+  const fetchChannelsFromSupabase = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('channels')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        const mapped = data
+          .map(mapRowToStreamChannel)
+          .filter((ch) => ch.isLive !== false);
+
+        setChannels(mapped);
+
+        if (mapped.length > 0) {
+          setCurrentStream((prev) => {
+            const updatedCurrent = mapped.find((c) => c.id === prev.id);
+            if (updatedCurrent) {
+              return {
+                id: updatedCurrent.id,
+                title: updatedCurrent.name,
+                name: updatedCurrent.name,
+                subtitle: updatedCurrent.currentProgram,
+                streamUrl: updatedCurrent.streamUrl,
+                embedUrl: updatedCurrent.embedUrl,
+                backupUrl: updatedCurrent.backupUrl,
+                isLive: updatedCurrent.isLive,
+                logo: updatedCurrent.logo,
+                category: updatedCurrent.category,
+                description: updatedCurrent.description,
+                viewers: updatedCurrent.viewers,
+                resolution: updatedCurrent.resolution,
+              };
+            }
+            // If current channel was turned offline or removed, switch to first online channel
+            const first = mapped[0];
+            return {
+              id: first.id,
+              title: first.name,
+              name: first.name,
+              subtitle: first.currentProgram,
+              streamUrl: first.streamUrl,
+              embedUrl: first.embedUrl,
+              backupUrl: first.backupUrl,
+              isLive: first.isLive,
+              logo: first.logo,
+              category: first.category,
+              description: first.description,
+              viewers: first.viewers,
+              resolution: first.resolution,
+            };
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error loading channels from Supabase:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchChannelsFromSupabase();
+
+    // Realtime subscription so Admin Console changes reflect immediately on User Site
+    const channelSub = supabase
+      .channel('public:channels-feed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'channels' },
+        () => {
+          fetchChannelsFromSupabase();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channelSub);
+    };
+  }, [fetchChannelsFromSupabase]);
 
   // Load saved favorites and subscription on mount
   useEffect(() => {
