@@ -81,13 +81,15 @@ export async function POST(req: NextRequest) {
     }
 
     const nowMs = Date.now();
-    const promoExpiresMs = new Date(promo.expires_at).getTime();
-
-    if (promoExpiresMs <= nowMs) {
-      return NextResponse.json(
-        { success: false, message: 'This promo code has expired.' },
-        { status: 400 }
-      );
+    // Only check expiry if expires_at is set (NULL means live forever)
+    if (promo.expires_at) {
+      const promoExpiresMs = new Date(promo.expires_at).getTime();
+      if (promoExpiresMs <= nowMs) {
+        return NextResponse.json(
+          { success: false, message: 'This promo code campaign has expired.' },
+          { status: 400 }
+        );
+      }
     }
 
     if (promo.used_count >= promo.max_uses) {
@@ -97,11 +99,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine duration in minutes (clamped to max 24 hours = 1440 mins)
-    const rawDurationMinutes =
-      (promo as any).duration_minutes ||
-      Math.max(5, Math.min(1440, Math.round((promoExpiresMs - new Date(promo.created_at || nowMs).getTime()) / (60 * 1000))));
-    const durationMinutes = Math.min(1440, Math.max(1, Number(rawDurationMinutes) || 30));
+    // Check if user already redeemed this code
+    if (userId) {
+      const { data: existingRedemption } = await supabase
+        .from('promo_redemptions')
+        .select('id')
+        .eq('promo_code_id', promo.id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (existingRedemption) {
+        return NextResponse.json(
+          { success: false, message: 'You have already redeemed this promo code on your account.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Determine duration in minutes (defaults to 24 hours = 1440 mins)
+    const durationMinutes = Math.min(1440, Math.max(1, Number((promo as any).duration_minutes) || 1440));
 
     const activatedAtIso = new Date(nowMs).toISOString();
     const subExpiresAtIso = new Date(nowMs + durationMinutes * 60 * 1000).toISOString();

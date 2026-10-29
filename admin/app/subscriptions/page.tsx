@@ -25,7 +25,7 @@ interface PromoCode {
   duration_minutes?: number;
   max_uses: number;
   used_count: number;
-  expires_at: string;
+  expires_at: string | null;
   is_active: boolean;
   created_at?: string | null;
 }
@@ -61,8 +61,9 @@ export default function AdminSubscriptionsPage() {
     code: '',
     discount_percent: 100,
     applicable_plan: 'All Plans',
-    max_uses: 100,
-    durationMinutes: 30,
+    max_uses: 1000,
+    durationMinutes: 1440, // Default 24 Hours
+    campaignDays: 0, // 0 = Never Expire / Live Forever
   });
 
   const supabase = createClient();
@@ -146,6 +147,7 @@ export default function AdminSubscriptionsPage() {
           applicable_plan: promoForm.applicable_plan,
           max_uses: Number(promoForm.max_uses),
           duration_minutes: Number(promoForm.durationMinutes),
+          campaign_days: Number(promoForm.campaignDays) > 0 ? Number(promoForm.campaignDays) : null,
         }),
       });
 
@@ -167,8 +169,9 @@ export default function AdminSubscriptionsPage() {
         code: '',
         discount_percent: 100,
         applicable_plan: 'All Plans',
-        max_uses: 100,
-        durationMinutes: 30,
+        max_uses: 1000,
+        durationMinutes: 1440,
+        campaignDays: 0,
       });
     } catch (err: any) {
       alert('Failed to create promo code: ' + err.message);
@@ -333,7 +336,7 @@ export default function AdminSubscriptionsPage() {
             {promoCodes.map((promo) => {
               const isCopied = copiedCodeId === promo.id;
               const isFree = promo.discount_percent === 100;
-              const isExpired = new Date(promo.expires_at) <= new Date();
+              const isExpired = promo.expires_at ? new Date(promo.expires_at) <= new Date() : false;
               return (
                 <div
                   key={promo.id}
@@ -359,12 +362,16 @@ export default function AdminSubscriptionsPage() {
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1 truncate">
                       Used: {promo.used_count || 0}/{promo.max_uses} •{' '}
-                      {isExpired ? (
+                      {!promo.expires_at ? (
+                        <span className="text-emerald-600 font-semibold">♾️ Never (Live Forever)</span>
+                      ) : isExpired ? (
                         <span className="text-red-600 font-semibold">Expired</span>
                       ) : (
                         <>
                           Expires{' '}
-                          {new Date(promo.expires_at).toLocaleTimeString([], {
+                          {new Date(promo.expires_at).toLocaleDateString([], {
+                            month: 'short',
+                            day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
                           })}
@@ -637,11 +644,11 @@ export default function AdminSubscriptionsPage() {
                 </select>
               </div>
 
-              {/* Max Redemptions & Validity */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Max Redemptions & User Duration & Admin Expiry */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-slate-600 block mb-1">
-                    Usage Limit (Users)
+                    Max Redemptions
                   </label>
                   <input
                     type="number"
@@ -657,20 +664,39 @@ export default function AdminSubscriptionsPage() {
 
                 <div>
                   <label className="text-xs font-semibold text-slate-600 block mb-1">
-                    Valid Duration
+                    User Access Pass
                   </label>
                   <select
                     value={promoForm.durationMinutes}
                     onChange={(e) =>
                       setPromoForm({ ...promoForm, durationMinutes: Number(e.target.value) })
                     }
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 focus:outline-none focus:border-red-600 focus:bg-white"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-600 focus:bg-white"
                   >
-                    <option value={5}>5 Minutes</option>
-                    <option value={30}>30 Minutes</option>
-                    <option value={60}>1 Hour</option>
+                    <option value={1440}>24 Hours (Full Day)</option>
                     <option value={360}>6 Hours</option>
-                    <option value={1440}>24 Hours</option>
+                    <option value={60}>1 Hour</option>
+                    <option value={30}>30 Minutes</option>
+                    <option value={5}>5 Minutes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 block mb-1">
+                    Campaign Expiry
+                  </label>
+                  <select
+                    value={promoForm.campaignDays}
+                    onChange={(e) =>
+                      setPromoForm({ ...promoForm, campaignDays: Number(e.target.value) })
+                    }
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 focus:outline-none focus:border-red-600 focus:bg-white"
+                  >
+                    <option value={0}>♾️ Never (Live Forever)</option>
+                    <option value={7}>7 Days</option>
+                    <option value={30}>30 Days</option>
+                    <option value={90}>90 Days</option>
+                    <option value={365}>1 Year</option>
                   </select>
                 </div>
               </div>

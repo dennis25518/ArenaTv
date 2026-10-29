@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
     const applicablePlan = String(body.applicable_plan || 'All Plans');
     const maxUses = Math.max(1, Number(body.max_uses || 100));
 
-    // Enforce valid durations: 5m, 30m, 1h (60m), 6h (360m), 24h (1440m) — never more than 24 hours
-    const requestedMinutes = Number(body.duration_minutes || 30);
+    // Enforce valid user access duration (defaults to 24 hours / 1440 mins)
+    const requestedMinutes = Number(body.duration_minutes || 1440);
     const durationMinutes = ALLOWED_DURATIONS_MINUTES.includes(requestedMinutes)
       ? requestedMinutes
       : Math.min(1440, Math.max(5, requestedMinutes));
@@ -38,8 +38,11 @@ export async function POST(req: NextRequest) {
         ? body.code.trim().toUpperCase()
         : buildRandomCode(discountPercent);
 
-    const now = new Date();
-    const expiresAt = new Date(now.getTime() + durationMinutes * 60 * 1000);
+    // Campaign Expiry (null/undefined means Never Expires / Live Forever)
+    const campaignExpiryDays = body.campaign_days ? Number(body.campaign_days) : null;
+    const expiresAt = campaignExpiryDays
+      ? new Date(Date.now() + campaignExpiryDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
 
     const supabase = createServerSupabaseClient();
 
@@ -50,6 +53,7 @@ export async function POST(req: NextRequest) {
       p_applicable_plan: applicablePlan,
       p_max_uses: maxUses,
       p_duration_minutes: durationMinutes,
+      p_campaign_expires_at: expiresAt,
     });
 
     if (!rpcError && rpcData && typeof rpcData === 'object' && 'success' in rpcData) {
@@ -78,9 +82,9 @@ export async function POST(req: NextRequest) {
           duration_minutes: durationMinutes,
           max_uses: maxUses,
           used_count: 0,
-          expires_at: expiresAt.toISOString(),
+          expires_at: expiresAt as any,
           is_active: true,
-        },
+        } as any,
       ])
       .select()
       .single();
@@ -103,7 +107,7 @@ export async function POST(req: NextRequest) {
           applicable_plan: applicablePlan,
           max_uses: maxUses,
           used_count: 0,
-          expires_at: expiresAt.toISOString(),
+          expires_at: expiresAt as any,
           is_active: true,
         } as any,
       ])
@@ -130,9 +134,9 @@ export async function POST(req: NextRequest) {
         duration_minutes: durationMinutes,
         max_uses: maxUses,
         used_count: 0,
-        expires_at: expiresAt.toISOString(),
+        expires_at: expiresAt,
         is_active: true,
-        created_at: now.toISOString(),
+        created_at: new Date().toISOString(),
       },
     });
   } catch (err: any) {

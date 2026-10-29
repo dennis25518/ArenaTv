@@ -175,50 +175,63 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
     setRepayUssdPrompt(true);
 
     try {
-      const res = await fetch('/api/payment/mobile-money', {
+      const res = await fetch('/api/payments/abliner/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: currentPhone,
           provider: currentProvider,
           amount: 2000,
+          userId: user?.id || null,
+          userEmail: profile?.email || user?.email || null,
         }),
       });
 
       const data = await res.json();
 
-      setTimeout(async () => {
-        if (data.success) {
-          activateSubscription(currentPhone, currentProvider, 2000, 30);
-          if (user) {
-            try {
-              await supabase.from('subscriptions').insert({
-                user_id: user.id,
-                plan_name: 'ArenaX Pro',
-                provider: currentProvider,
-                phone: currentPhone,
-                amount: 2000,
-                status: 'active',
-                activated_at: new Date().toISOString(),
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              });
-            } catch (dbErr) {
-              console.warn('Repay DB sync note:', dbErr);
-            }
+      if (!res.ok || !data.success) {
+        setRepayPaymentMessage(data.message || 'Hitilafu ya kuanzisha malipo. Tafadhali hakikisha namba yako.');
+        setRepayUssdPrompt(false);
+        setIsRepayProcessing(false);
+        return;
+      }
+
+      setRepayPaymentMessage('📱 USSD imetumwa! Weka namba yako ya siri kwenye simu kuthibitisha TZS 2,000...');
+
+      // Poll status every 3 seconds for up to 60 seconds
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const checkRes = await fetch(
+            `/api/payments/abliner/status?id=${encodeURIComponent(data.transactionId || '')}&userId=${encodeURIComponent(user?.id || '')}`
+          );
+          const checkData = await checkRes.json();
+
+          if (checkData.isPaid || checkData.status === 'completed' || checkData.status === 'successful') {
+            clearInterval(interval);
+            activateSubscription(currentPhone, currentProvider, 2000, 30);
+            setRepayPaymentMessage('Hongera! Malipo yamekamilika na kifurushi kimewashwa!');
+            setRepayUssdPrompt(false);
+            setIsRepayProcessing(false);
+            setTimeout(() => {
+              setIsRepaying(false);
+              setRepayPaymentMessage(null);
+            }, 2000);
+          } else if (attempts >= 20) {
+            clearInterval(interval);
+            setRepayPaymentMessage('Muda umekwisha au muamala bado unachakatwa. Ukikamilika kifurushi kitaanza kiotomatiki.');
+            setRepayUssdPrompt(false);
+            setIsRepayProcessing(false);
           }
-          setRepayPaymentMessage(data.message || 'Malipo yamekamilika! Kifurushi chako kimeongezwa.');
-          setRepayUssdPrompt(false);
-          setIsRepayProcessing(false);
-          setTimeout(() => {
-            setIsRepaying(false);
-            setRepayPaymentMessage(null);
-          }, 2000);
-        } else {
-          setRepayPaymentMessage(data.message || 'Hitilafu ya malipo.');
-          setRepayUssdPrompt(false);
-          setIsRepayProcessing(false);
+        } catch {
+          if (attempts >= 20) {
+            clearInterval(interval);
+            setRepayUssdPrompt(false);
+            setIsRepayProcessing(false);
+          }
         }
-      }, 1500);
+      }, 3000);
     } catch (err) {
       setRepayPaymentMessage('Hitilafu ya mtandao. Tafadhali jaribu tena.');
       setRepayUssdPrompt(false);
@@ -238,51 +251,66 @@ export const ProfileView: React.FC<ProfileViewProps> = () => {
     }
 
     const currentProvider = selectedProvider;
+    const currentPhone = phoneNumber.trim();
+
     setIsProcessing(true);
     setPaymentMessage(null);
     setUssdPrompt(true);
 
     try {
-      const res = await fetch('/api/payment/mobile-money', {
+      const res = await fetch('/api/payments/abliner/push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: phoneNumber.trim(),
+          phone: currentPhone,
           provider: currentProvider,
           amount: 2000,
+          userId: user?.id || null,
+          userEmail: profile?.email || user?.email || null,
         }),
       });
 
       const data = await res.json();
 
-      setTimeout(async () => {
-        if (data.success) {
-          activateSubscription(phoneNumber.trim(), currentProvider, 2000, 30);
-          if (user) {
-            try {
-              await supabase.from('subscriptions').insert({
-                user_id: user.id,
-                plan_name: 'ArenaX Pro',
-                provider: currentProvider,
-                phone: phoneNumber.trim(),
-                amount: 2000,
-                status: 'active',
-                activated_at: new Date().toISOString(),
-                expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              });
-            } catch (dbErr) {
-              console.warn('Subscription DB sync note:', dbErr);
-            }
+      if (!res.ok || !data.success) {
+        setPaymentMessage(data.message || 'Hitilafu ya kuanzisha malipo. Tafadhali hakikisha namba yako.');
+        setUssdPrompt(false);
+        setIsProcessing(false);
+        return;
+      }
+
+      setPaymentMessage('📱 USSD imetumwa! Weka namba yako ya siri kwenye simu kuthibitisha TZS 2,000...');
+
+      // Poll status every 3 seconds for up to 60 seconds
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        try {
+          const checkRes = await fetch(
+            `/api/payments/abliner/status?id=${encodeURIComponent(data.transactionId || '')}&userId=${encodeURIComponent(user?.id || '')}`
+          );
+          const checkData = await checkRes.json();
+
+          if (checkData.isPaid || checkData.status === 'completed' || checkData.status === 'successful') {
+            clearInterval(interval);
+            activateSubscription(currentPhone, currentProvider, 2000, 30);
+            setPaymentMessage('Hongera! Malipo yamekamilika na kifurushi kimewashwa!');
+            setUssdPrompt(false);
+            setIsProcessing(false);
+          } else if (attempts >= 20) {
+            clearInterval(interval);
+            setPaymentMessage('Muda umekwisha au muamala bado unachakatwa. Ukikamilika kifurushi kitaanza kiotomatiki.');
+            setUssdPrompt(false);
+            setIsProcessing(false);
           }
-          setPaymentMessage(data.message);
-          setUssdPrompt(false);
-          setIsProcessing(false);
-        } else {
-          setPaymentMessage(data.message || 'Hitilafu ya malipo.');
-          setUssdPrompt(false);
-          setIsProcessing(false);
+        } catch {
+          if (attempts >= 20) {
+            clearInterval(interval);
+            setUssdPrompt(false);
+            setIsProcessing(false);
+          }
         }
-      }, 1500);
+      }, 3000);
     } catch (err) {
       setPaymentMessage('Hitilafu ya mtandao. Tafadhali jaribu tena.');
       setUssdPrompt(false);
