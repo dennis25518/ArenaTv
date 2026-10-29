@@ -96,6 +96,7 @@ export const VideoPlayer = () => {
   const [sparklineBars, setSparklineBars] = useState<number[]>([35, 45, 60, 40, 70, 55, 65, 80, 70, 85]);
   const lastRealBytesTime = useRef(Date.now());
   const bytesSinceLastSec = useRef(0);
+  const accumBytesRef = useRef(0);
 
   // Reset telemetry on channel switch
   useEffect(() => {
@@ -105,10 +106,11 @@ export const VideoPlayer = () => {
     setSessionSeconds(0);
     setSparklineBars([35, 45, 60, 40, 70, 55, 65, 80, 70, 85]);
     bytesSinceLastSec.current = 0;
+    accumBytesRef.current = 0;
     lastRealBytesTime.current = Date.now();
   }, [currentStream?.id]);
 
-  // Real-time ticker and throughput calculator
+  // Throttled ticker (every 2.5s) to eliminate memory thrashing and CPU burn
   useEffect(() => {
     if (!isPlaying) {
       setCurrentSpeedKbps(0);
@@ -116,19 +118,17 @@ export const VideoPlayer = () => {
     }
 
     const interval = setInterval(() => {
-      setSessionSeconds((s) => s + 1);
+      setSessionSeconds((s) => s + 2);
 
       const now = Date.now();
       const timeSinceRealFrag = now - lastRealBytesTime.current;
 
       let speedKbps = 0;
 
-      // If HLS fragment events fired recently, use real byte throughput
-      if (timeSinceRealFrag < 2500 && bytesSinceLastSec.current > 0) {
-        speedKbps = Math.round(bytesSinceLastSec.current / 1024);
+      if (timeSinceRealFrag < 3500 && bytesSinceLastSec.current > 0) {
+        speedKbps = Math.round(bytesSinceLastSec.current / 2.5 / 1024);
         bytesSinceLastSec.current = 0;
       } else {
-        // Fallback for native Safari HLS or iframe
         const baseRateKbps = 
           currentQuality === '1080p' ? 320 :
           currentQuality === '720p' ? 190 :
@@ -136,20 +136,20 @@ export const VideoPlayer = () => {
 
         const jitter = 0.92 + Math.random() * 0.16;
         speedKbps = Math.round(baseRateKbps * jitter);
-        const addedBytes = Math.round((speedKbps * 1024) / 1);
-
-        setDownloadBytes((d) => d + addedBytes);
-        setUploadBytes((u) => u + Math.round(addedBytes * 0.018));
+        const addedBytes = Math.round((speedKbps * 1024) * 2.5);
+        accumBytesRef.current += addedBytes;
       }
 
+      const totalDown = accumBytesRef.current;
+      setDownloadBytes(totalDown);
+      setUploadBytes(Math.round(totalDown * 0.018));
       setCurrentSpeedKbps(speedKbps);
 
-      // Update animated sparkline bars
       setSparklineBars((prev) => {
         const nextVal = Math.min(100, Math.max(25, Math.round((speedKbps / 360) * 100)));
         return [...prev.slice(1), nextVal];
       });
-    }, 1000);
+    }, 2500);
 
     return () => clearInterval(interval);
   }, [isPlaying, currentQuality]);
@@ -227,14 +227,30 @@ export const VideoPlayer = () => {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 60,
+        // YouTube-grade memory management
+        maxBufferLength: 20,              // Keep only 20s forward buffer in RAM
+        maxMaxBufferLength: 30,           // Hard cap 30s forward buffer
+        maxBufferSize: 30 * 1024 * 1024,  // Cap total buffer at 30 MB (prevents browser tab crashes)
+        backBufferLength: 10,             // Evict played segments older than 10s from memory
+        // Resilient auto-retry timeouts
+        manifestLoadingTimeOut: 15000,
+        manifestLoadingMaxRetry: 5,
+        manifestLoadingRetryDelay: 1000,
+        levelLoadingTimeOut: 15000,
+        levelLoadingMaxRetry: 5,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 6,
+        fragLoadingRetryDelay: 1000,
       });
 
       hlsRef.current = hls;
+      let networkRetryCount = 0;
+
       hls.loadSource(effectiveStreamUrl);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        networkRetryCount = 0;
         setIsBuffering(false);
         const levels = [
           { id: -1, label: 'Auto' },
@@ -253,8 +269,7 @@ export const VideoPlayer = () => {
       hls.on(Hls.Events.FRAG_LOADED, (event, data: any) => {
         const bytes = data?.frag?.stats?.total || data?.stats?.total || data?.payload?.byteLength;
         if (bytes && typeof bytes === 'number') {
-          setDownloadBytes((d) => d + bytes);
-          setUploadBytes((u) => u + Math.round(bytes * 0.018));
+          accumBytesRef.current += bytes;
           bytesSinceLastSec.current += bytes;
           lastRealBytesTime.current = Date.now();
         }
@@ -264,24 +279,39 @@ export const VideoPlayer = () => {
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              if (!useProxy && !effectiveStreamUrl.startsWith('/api/stream-proxy')) {
-                console.warn('Network error detected. Switching to stream proxy fallback...');
+              if (networkRetryCount < 4) {
+                networkRetryCount += 1;
+                console.warn(`HLS Network drop. Auto-recovering attempt ${networkRetryCount}...`);
+                hls.startLoad();
+              } else if (!useProxy && !effectiveStreamUrl.startsWith('/api/stream-proxy')) {
+                networkRetryCount = 0;
                 setUseProxy(true);
               } else if (currentStream?.backupUrl && currentStream?.streamUrl !== currentStream?.backupUrl) {
-                console.warn('Proxy failed. Trying backup stream...');
+                networkRetryCount = 0;
                 hls.loadSource(currentStream.backupUrl);
               } else {
-                setStreamError('Unable to load stream. Network or CORS blocked.');
-                setIsBuffering(false);
+                networkRetryCount = 0;
+                // Graceful retry instead of permanently failing
+                setTimeout(() => {
+                  if (hlsRef.current) hlsRef.current.startLoad();
+                }, 2000);
               }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.warn('Media error detected. Recovering...');
+              console.warn('HLS Media error. Auto-recovering codec & buffer...');
               hls.recoverMediaError();
               break;
             default:
-              setStreamError('Stream playback error encountered.');
-              hls.destroy();
+              console.warn('HLS fatal error. Attempting engine recovery...');
+              try {
+                hls.destroy();
+                setTimeout(() => {
+                  if (videoRef.current && effectiveStreamUrl && Hls.isSupported()) {
+                    hls.loadSource(effectiveStreamUrl);
+                    hls.attachMedia(videoRef.current);
+                  }
+                }, 1500);
+              } catch (e) {}
               break;
           }
         }
@@ -338,6 +368,35 @@ export const VideoPlayer = () => {
       video.removeEventListener('playing', onPlaying);
       video.removeEventListener('volumechange', onVolumeChange);
     };
+  }, []);
+
+  // Live Stall Watchdog: Detects if playback froze due to packet gaps and resyncs to live edge
+  useEffect(() => {
+    let lastTime = 0;
+    let stuckCount = 0;
+
+    const stallCheck = setInterval(() => {
+      const video = videoRef.current;
+      if (video && !video.paused && !video.ended && video.readyState >= 2) {
+        if (Math.abs(video.currentTime - lastTime) < 0.25) {
+          stuckCount += 1;
+          if (stuckCount >= 3) {
+            // Video is frozen on live stream, gently jump to live edge
+            if (video.buffered.length > 0) {
+              const liveEdge = video.buffered.end(video.buffered.length - 1);
+              video.currentTime = Math.max(0, liveEdge - 1);
+            }
+            video.play().catch(() => {});
+            stuckCount = 0;
+          }
+        } else {
+          stuckCount = 0;
+        }
+        lastTime = video.currentTime;
+      }
+    }, 2500);
+
+    return () => clearInterval(stallCheck);
   }, []);
 
   const togglePlay = () => {

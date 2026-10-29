@@ -86,14 +86,22 @@ export const FloatingMiniPlayer: React.FC = () => {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        backBufferLength: 30,
+        maxBufferLength: 15,
+        maxMaxBufferLength: 25,
+        maxBufferSize: 20 * 1024 * 1024, // 20 MB cap for mini-player
+        backBufferLength: 5,              // Drop old video immediately
+        manifestLoadingTimeOut: 15000,
+        fragLoadingTimeOut: 20000,
+        fragLoadingMaxRetry: 6,
       });
 
       hlsRef.current = hls;
+      let networkRetryCount = 0;
       hls.loadSource(effectiveStreamUrl);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        networkRetryCount = 0;
         setIsBuffering(false);
         video
           .play()
@@ -110,11 +118,17 @@ export const FloatingMiniPlayer: React.FC = () => {
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              if (!useProxy && !effectiveStreamUrl.startsWith('/api/stream-proxy')) {
+              if (networkRetryCount < 3) {
+                networkRetryCount += 1;
+                hls.startLoad();
+              } else if (!useProxy && !effectiveStreamUrl.startsWith('/api/stream-proxy')) {
+                networkRetryCount = 0;
                 setUseProxy(true);
               } else if (currentStream.backupUrl && currentStream.streamUrl !== currentStream.backupUrl) {
+                networkRetryCount = 0;
                 hls.loadSource(currentStream.backupUrl);
               } else {
+                networkRetryCount = 0;
                 setIsBuffering(false);
               }
               break;
@@ -122,7 +136,9 @@ export const FloatingMiniPlayer: React.FC = () => {
               hls.recoverMediaError();
               break;
             default:
-              hls.destroy();
+              try {
+                hls.destroy();
+              } catch (e) {}
               break;
           }
         }

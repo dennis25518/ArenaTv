@@ -31,7 +31,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
   const [mounted, setMounted] = useState(false);
   const [lockNotice, setLockNotice] = useState<string | null>(null);
   const { user: authUser, profile, loading: authLoading } = useAuth();
-  const { subscription } = useStream();
+  const { subscription, subLoaded } = useStream();
   const prevSubActive = useRef<boolean>(subscription.isActive);
 
   useEffect(() => {
@@ -58,7 +58,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
 
   // Enforce Stage 2 (Activation Gate) & Stage 3 (Auto-unlock to /channels)
   useEffect(() => {
-    if (!mounted || authLoading || !authUser) return;
+    if (!mounted || authLoading || !subLoaded || !authUser) return;
 
     if (!subscription.isActive && activePage !== 'Profile') {
       router.replace('/profile?locked=1');
@@ -68,7 +68,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     }
 
     prevSubActive.current = subscription.isActive;
-  }, [subscription.isActive, authUser, authLoading, mounted, activePage, router]);
+  }, [subscription.isActive, authUser, authLoading, subLoaded, mounted, activePage, router]);
 
   const handleNavigate = (targetLabel: string) => {
     const targetRoute = ROUTE_MAP[targetLabel] || '/profile';

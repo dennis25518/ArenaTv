@@ -45,6 +45,7 @@ interface StreamContextType {
   channels: StreamChannel[];
   favorites: string[];
   subscription: SubscriptionData;
+  subLoaded: boolean;
   timeRemaining: TimeRemaining;
   setCurrentStream: (stream: ActiveStream | null) => void;
   playChannel: (channel: StreamChannel) => void;
@@ -118,7 +119,7 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [channels, setChannels] = useState<StreamChannel[]>(CHANNELS);
   const [favorites, setFavorites] = useState<string[]>(['tbc-1', 'bein-xtra-hd']);
   const [subscription, setSubscription] = useState<SubscriptionData>(defaultSubscription);
-  const [now, setNow] = useState<number>(Date.now());
+  const [subLoaded, setSubLoaded] = useState<boolean>(false);
   const supabase = createClient();
 
   const fetchChannelsFromSupabase = useCallback(async () => {
@@ -139,24 +140,34 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           setCurrentStream((prev) => {
             if (!prev) return null;
             const updatedCurrent = mapped.find((c) => c.id === prev.id);
-            if (updatedCurrent) {
-              return {
-                id: updatedCurrent.id,
-                title: updatedCurrent.name,
-                name: updatedCurrent.name,
-                subtitle: updatedCurrent.currentProgram,
-                streamUrl: updatedCurrent.streamUrl,
-                embedUrl: updatedCurrent.embedUrl,
-                backupUrl: updatedCurrent.backupUrl,
-                isLive: updatedCurrent.isLive,
-                logo: updatedCurrent.logo,
-                category: updatedCurrent.category,
-                description: updatedCurrent.description,
-                viewers: updatedCurrent.viewers,
-                resolution: updatedCurrent.resolution,
-              };
+            if (!updatedCurrent) return prev;
+
+            // Only trigger a new stream reference if URLs or essential stream data changed
+            if (
+              prev.streamUrl === updatedCurrent.streamUrl &&
+              prev.embedUrl === updatedCurrent.embedUrl &&
+              prev.backupUrl === updatedCurrent.backupUrl &&
+              prev.title === updatedCurrent.name &&
+              prev.subtitle === updatedCurrent.currentProgram
+            ) {
+              return prev; // Preserve identity so Hls player does NOT reload!
             }
-            return null;
+
+            return {
+              ...prev,
+              title: updatedCurrent.name,
+              name: updatedCurrent.name,
+              subtitle: updatedCurrent.currentProgram,
+              streamUrl: updatedCurrent.streamUrl,
+              embedUrl: updatedCurrent.embedUrl,
+              backupUrl: updatedCurrent.backupUrl,
+              isLive: updatedCurrent.isLive,
+              logo: updatedCurrent.logo,
+              category: updatedCurrent.category,
+              description: updatedCurrent.description,
+              viewers: updatedCurrent.viewers,
+              resolution: updatedCurrent.resolution,
+            };
           });
         }
       }
@@ -209,16 +220,18 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     } catch (e) {
       console.error('Failed to load storage data', e);
+    } finally {
+      setSubLoaded(true);
     }
   }, []);
 
-  // Tick timer every second for real-time countdown
+  // Check subscription expiration every 5 seconds without spamming 1s state re-renders across the app
   useEffect(() => {
+    if (!subscription.isActive) return;
+
     const timer = setInterval(() => {
       const currentNow = Date.now();
-      setNow(currentNow);
-
-      if (subscription.isActive && currentNow >= subscription.expiresAt) {
+      if (currentNow >= subscription.expiresAt) {
         setSubscription((prev) => {
           const expired = { ...prev, isActive: false };
           try {
@@ -227,14 +240,15 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return expired;
         });
       }
-    }, 1000);
+    }, 5000);
 
     return () => clearInterval(timer);
   }, [subscription.isActive, subscription.expiresAt]);
 
-  // Calculate live countdown and progress percentage
+  // Calculate live countdown and progress percentage on demand
   const calculateRemaining = (): TimeRemaining => {
-    if (!subscription.isActive || now >= subscription.expiresAt) {
+    const currentTime = Date.now();
+    if (!subscription.isActive || currentTime >= subscription.expiresAt) {
       return {
         days: 0,
         hours: 0,
@@ -246,7 +260,7 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       };
     }
 
-    const diff = Math.max(0, subscription.expiresAt - now);
+    const diff = Math.max(0, subscription.expiresAt - currentTime);
     const totalDuration = Math.max(1, subscription.expiresAt - subscription.activatedAt);
     const progressPercent = Math.min(100, Math.max(0, (diff / totalDuration) * 100));
 
@@ -365,6 +379,7 @@ export const StreamProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         channels,
         favorites,
         subscription,
+        subLoaded,
         timeRemaining: calculateRemaining(),
         setCurrentStream,
         playChannel,
