@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-export interface LibraryPlaylist {
+interface LibraryPlaylist {
   id: string;
   name: string;
   url: string;
@@ -27,7 +27,7 @@ export interface LibraryPlaylist {
   created_at?: string;
 }
 
-export const DEFAULT_LIBRARY_PLAYLISTS: LibraryPlaylist[] = [
+const DEFAULT_LIBRARY_PLAYLISTS: LibraryPlaylist[] = [
   {
     id: 'lib-astra-multi',
     name: 'Astra Multi-Channel Server',
@@ -118,7 +118,7 @@ export const DEFAULT_LIBRARY_PLAYLISTS: LibraryPlaylist[] = [
   },
 ];
 
-export const LIBRARY_STORAGE_KEY = 'arenax_playlist_library_v1';
+const LIBRARY_STORAGE_KEY = 'arenax_playlist_library_v1';
 
 const LIBRARY_CATEGORIES = [
   'Multi-Category',

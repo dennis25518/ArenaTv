@@ -186,6 +186,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      promo_codes: {
+        Row: {
+          id: string;
+          code: string;
+          discount_percent: number;
+          applicable_plan: string;
+          max_uses: number;
+          used_count: number;
+          expires_at: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          discount_percent: number;
+          applicable_plan?: string;
+          max_uses?: number;
+          used_count?: number;
+          expires_at: string;
+          is_active?: boolean;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          code?: string;
+          discount_percent?: number;
+          applicable_plan?: string;
+          max_uses?: number;
+          used_count?: number;
+          expires_at?: string;
+          is_active?: boolean;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {

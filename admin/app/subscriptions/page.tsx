@@ -26,7 +26,7 @@ interface PromoCode {
   used_count: number;
   expires_at: string;
   is_active: boolean;
-  created_at: string;
+  created_at?: string | null;
 }
 
 const STORAGE_KEY = 'arenax_admin_promo_codes';
